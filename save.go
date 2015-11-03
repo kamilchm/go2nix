@@ -29,29 +29,9 @@ type GoPackage struct {
 func save(pkg, goPath string) {
 	packages := discoverDeps(pkg, goPath)
 
-	t, err := template.ParseFiles("templates/deps.nix")
-	if err != nil {
+	if err := writeFromTemplate("deps.nix", packages); err != nil {
 		log.Fatal(err)
 	}
-
-	depsFile, err := os.Create("deps.nix")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer depsFile.Close()
-
-	t.Execute(depsFile, packages)
-
-	t, err = template.ParseFiles("templates/default.nix")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defaultFile, err := os.Create("default.nix")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer defaultFile.Close()
 
 	pkgRoot, err := govcs.RepoRootForImportPath(pkg, false)
 	if err != nil {
@@ -63,7 +43,31 @@ func save(pkg, goPath string) {
 		fmt.Errorf("Can't initialize package data", err)
 	}
 
-	t.Execute(defaultFile, p)
+	if err = writeFromTemplate("default.nix", p); err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func writeFromTemplate(filename string, data interface{}) error {
+	templateData, err := Asset("templates/" + filename)
+	if err != nil {
+		return err
+	}
+
+	t, err := template.New(filename).Parse(string(templateData))
+	if err != nil {
+		return err
+	}
+
+	target, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer target.Close()
+
+	t.Execute(target, data)
+	return nil
 }
 
 func discoverDeps(pkg, goPath string) (packages []*GoPackage) {

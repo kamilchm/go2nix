@@ -1,6 +1,8 @@
 // All go2nix CLI related stuff
 package main
 
+//go:generate go-bindata -o assets.go templates/
+
 import (
 	"os"
 
