@@ -26,7 +26,7 @@ func prepareGoPath() (string, error) {
 }
 
 func goGet(pkg, goPath string) error {
-	goGetCmd := exec.Command("go", "get", "-v", pkg)
+	goGetCmd := exec.Command("go", "get", "-v", "-d", pkg)
 	goGetCmd.Env = setGoPath(os.Environ(), goPath)
 	goGetCmd.Stderr = os.Stderr
 	goGetCmd.Stdout = os.Stdout
