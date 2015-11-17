@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 
 	mmvcs "github.com/Masterminds/vcs"
 	govcs "golang.org/x/tools/go/vcs"
@@ -24,26 +25,35 @@ type GoPackage struct {
 	VcsCommand string
 	Revision   string
 	Hash       string
+	UpdateDate time.Time
+	Vendored   []*VendoredPackage
 }
 
-func save(pkg, goPath string) {
-	packages := discoverDeps(pkg, goPath)
+type VendoredPackage struct {
+	Name       string
+	ImportPath string
+	PkgDir     string
+}
 
-	if err := writeFromTemplate("deps.nix", packages); err != nil {
-		log.Fatal(err)
-	}
+func save(pkgName, goPath string) {
+	deps := discoverDeps(pkgName, goPath)
 
-	pkgRoot, err := govcs.RepoRootForImportPath(pkg, false)
+	pkgRoot, err := govcs.RepoRootForImportPath(pkgName, false)
 	if err != nil {
 		fmt.Errorf("Can't get repo for import path", err)
 	}
 
-	p, err := Init(*pkgRoot, goPath)
+	pkg, err := Init(*pkgRoot, goPath)
 	if err != nil {
 		fmt.Errorf("Can't initialize package data", err)
 	}
 
-	if err = writeFromTemplate("default.nix", p); err != nil {
+	pkgDef := struct {
+		Pkg  *GoPackage
+		Deps []*GoPackage
+	}{pkg, deps}
+
+	if err = writeFromTemplate("default.nix", pkgDef); err != nil {
 		log.Fatal(err)
 	}
 
@@ -55,7 +65,7 @@ func writeFromTemplate(filename string, data interface{}) error {
 		return err
 	}
 
-	t, err := template.New(filename).Parse(string(templateData))
+	t, err := template.New(filename).Delims("[[", "]]").Parse(string(templateData))
 	if err != nil {
 		return err
 	}
@@ -72,17 +82,12 @@ func writeFromTemplate(filename string, data interface{}) error {
 
 func discoverDeps(pkg, goPath string) (packages []*GoPackage) {
 	roots := discoverRootPackages(goPath)
-	for root, _ := range roots {
-		if root.Root == pkg {
+	for _, root := range roots {
+		if root.ImportPath == pkg {
 			continue
 		}
 
-		p, err := Init(root, goPath)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		packages = append(packages, p)
+		packages = append(packages, root)
 	}
 
 	return packages
@@ -97,6 +102,10 @@ func Init(rr govcs.RepoRoot, goPath string) (*GoPackage, error) {
 	if err != nil {
 		return nil, err
 	}
+	updateDate, err := repo.Date()
+	if err != nil {
+		return nil, err
+	}
 
 	return &GoPackage{
 		Name:       nixName(rr.Root),
@@ -105,19 +114,20 @@ func Init(rr govcs.RepoRoot, goPath string) (*GoPackage, error) {
 		VcsCommand: rr.VCS.Cmd,
 		Revision:   revision,
 		Hash:       calculateHash("file://"+repo.LocalPath(), rr.VCS.Cmd),
+		UpdateDate: updateDate,
 	}, nil
 }
 
 func nixName(goImportPath string) string {
 	parts := strings.Split(goImportPath, "/")
-	return parts[len(parts)-1]
+	return strings.Replace(parts[len(parts)-1], ".", "-", -1)
 }
 
-func discoverRootPackages(goPath string) map[govcs.RepoRoot]struct{} {
+func discoverRootPackages(goPath string) map[string]*GoPackage {
 	pkgsBase := goPath + "/src/"
 	baseLen := len(pkgsBase)
 	packages := make(map[string]struct{})
-	roots := make(map[govcs.RepoRoot]struct{})
+	roots := make(map[string]*GoPackage)
 	filepath.Walk(pkgsBase,
 		func(pth string, info os.FileInfo, err error) error {
 			if !strings.HasSuffix(pth, ".go") {
@@ -134,8 +144,15 @@ func discoverRootPackages(goPath string) map[govcs.RepoRoot]struct{} {
 
 			importPath := pkgDir[baseLen:]
 
-			for repo, _ := range roots {
-				if strings.HasPrefix(importPath, repo.Root) {
+			for _, root := range roots {
+				if strings.HasPrefix(importPath, root.ImportPath) {
+					if strings.Contains(importPath, "vendor/") {
+						root.Vendored = []*VendoredPackage{&VendoredPackage{
+							Name:       nixName(importPath),
+							ImportPath: strings.Split(importPath, "vendor/")[1],
+							PkgDir:     strings.Split(importPath, root.ImportPath+"/")[1],
+						}}
+					}
 					return nil
 				}
 			}
@@ -143,8 +160,13 @@ func discoverRootPackages(goPath string) map[govcs.RepoRoot]struct{} {
 			rr, err := govcs.RepoRootForImportPath(importPath, false)
 			if err != nil {
 				fmt.Errorf("Can't get repo for import path", err)
+			}
+
+			root, err := Init(*rr, goPath)
+			if err != nil {
+				log.Println("Can't create package metadata: ", err)
 			} else {
-				roots[*rr] = inSet
+				roots[importPath] = root
 			}
 
 			return nil

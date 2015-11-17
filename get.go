@@ -14,6 +14,8 @@ func get(pkg string) {
 		log.Fatal(err)
 	}
 
+	log.Println("Using temporary GOPATH:", goPath)
+
 	if err := goGet(pkg, goPath); err != nil {
 		log.Fatal(err)
 	}
