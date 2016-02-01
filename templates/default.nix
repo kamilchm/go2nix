@@ -33,6 +33,6 @@ buildGoPackage rec {
 
       src = "${[[ $dep.Name ]].src}/[[ $vend.PkgDir ]]";
     };
-    [[ end ]][[ end ]]
+    [[ end ]][[ end ]] # can be improved with Go 1.6 http://talks.golang.org/2016/state-of-go.slide#14
   });
 }
