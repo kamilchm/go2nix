@@ -1,7 +1,10 @@
 package main
 
+// go:generate go-bindata .
+
 import (
 	"fmt"
+	"go/build"
 	"log"
 	"os"
 	"path"
@@ -35,17 +38,20 @@ type VendoredPackage struct {
 	PkgDir     string
 }
 
-func save(pkgName, goPath string) {
-	deps := discoverDeps(pkgName, goPath)
+func save(pkgName, goPath string) error {
 
-	pkgRoot, err := govcs.RepoRootForImportPath(pkgName, false)
+	pkg, err := NewPacakge(pkgName, goPath)
 	if err != nil {
-		fmt.Errorf("Can't get repo for import path", err)
+		return err
 	}
 
-	pkg, err := Init(*pkgRoot, goPath)
+	deps, err := discoverDeps(pkg, goPath)
 	if err != nil {
-		fmt.Errorf("Can't initialize package data", err)
+		return err
+	}
+
+	for _, dep := range deps {
+		log.Println(dep.ImportPath)
 	}
 
 	pkgDef := struct {
@@ -54,9 +60,10 @@ func save(pkgName, goPath string) {
 	}{pkg, deps}
 
 	if err = writeFromTemplate("default.nix", pkgDef); err != nil {
-		log.Fatal(err)
+		return err
 	}
 
+	return nil
 }
 
 func writeFromTemplate(filename string, data interface{}) error {
@@ -80,23 +87,16 @@ func writeFromTemplate(filename string, data interface{}) error {
 	return nil
 }
 
-func discoverDeps(pkg, goPath string) (packages []*GoPackage) {
-	roots := discoverRootPackages(goPath)
-	for _, root := range roots {
-		if root.ImportPath == pkg {
-			continue
-		}
-
-		packages = append(packages, root)
+func NewPacakge(importPath string, goPath string) (*GoPackage, error) {
+	rr, err := govcs.RepoRootForImportPath(importPath, false)
+	if err != nil {
+		return nil, fmt.Errorf("Can't get repo for import path: %v", err)
 	}
 
-	return packages
-}
-
-func Init(rr govcs.RepoRoot, goPath string) (*GoPackage, error) {
-	repo, err := mmvcs.NewRepo(rr.Repo, goPath+"/src/"+rr.Root)
+	repo, err := mmvcs.NewRepo("", goPath+"/src/"+rr.Root)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error while creating repo for (%v, %v): %v",
+			rr.Repo, goPath+"/src/"+rr.Root, err)
 	}
 	revision, err := repo.Version()
 	if err != nil {
@@ -123,54 +123,92 @@ func nixName(goImportPath string) string {
 	return strings.Replace(parts[len(parts)-1], ".", "-", -1)
 }
 
-func discoverRootPackages(goPath string) map[string]*GoPackage {
-	pkgsBase := goPath + "/src/"
-	baseLen := len(pkgsBase)
-	packages := make(map[string]struct{})
-	roots := make(map[string]*GoPackage)
-	filepath.Walk(pkgsBase,
+func discoverDeps(pkg *GoPackage, goPath string) ([]*GoPackage, error) {
+	depsMap := make(map[string]*GoPackage)
+	depsMap, err := depsRecursive(pkg, goPath, depsMap)
+	if err != nil {
+		return nil, err
+	}
+
+	rrSet := make(map[string]*GoPackage)
+	for _, pkg := range depsMap {
+		if _, exist := rrSet[pkg.ImportPath]; !exist {
+			rrSet[pkg.ImportPath] = pkg
+		}
+	}
+
+	packages := make([]*GoPackage, len(rrSet))
+
+	i := 0
+	for _, pkg := range rrSet {
+		packages[i] = pkg
+		i++
+	}
+
+	return packages, nil
+}
+
+func depsRecursive(pkg *GoPackage, goPath string, depsMap map[string]*GoPackage) (packages map[string]*GoPackage, err error) {
+	if _, exist := depsMap[pkg.ImportPath]; exist {
+		return depsMap, nil
+	}
+
+	log.Println("Anaalyzing", pkg.ImportPath)
+
+	pkgBase := goPath + "/src/" + pkg.ImportPath
+	filepath.Walk(pkgBase,
 		func(pth string, info os.FileInfo, err error) error {
 			if !strings.HasSuffix(pth, ".go") {
 				return nil
 			}
 
-			pkgDir := path.Dir(pth)
-
-			if _, added := packages[pkgDir]; added {
-				return nil
+			subDir, err := build.ImportDir(path.Dir(pth), build.AllowBinary)
+			if err != nil {
+				return err
 			}
 
-			packages[pkgDir] = inSet
+			subPkg, err := NewPacakge(subDir.ImportPath, goPath)
+			if err != nil {
+				return err
+			}
+			depsMap[subPkg.ImportPath] = subPkg
 
-			importPath := pkgDir[baseLen:]
+			allImports := append(subDir.Imports, subDir.TestImports...)
 
-			for _, root := range roots {
-				if strings.HasPrefix(importPath, root.ImportPath) {
-					if strings.Contains(importPath, "vendor/") {
-						root.Vendored = []*VendoredPackage{&VendoredPackage{
-							Name:       nixName(importPath),
-							ImportPath: strings.Split(importPath, "vendor/")[1],
-							PkgDir:     strings.Split(importPath, root.ImportPath+"/")[1],
-						}}
-					}
-					return nil
+			for _, imp := range allImports {
+				goroot, err := isGoroot(imp)
+				if err != nil {
+					return err
 				}
-			}
+				if goroot {
+					continue
+				}
 
-			rr, err := govcs.RepoRootForImportPath(importPath, false)
-			if err != nil {
-				fmt.Errorf("Can't get repo for import path", err)
-			}
+				depPkg, err := NewPacakge(imp, goPath)
+				if err != nil {
+					return err
+				}
 
-			root, err := Init(*rr, goPath)
-			if err != nil {
-				log.Println("Can't create package metadata: ", err)
-			} else {
-				roots[importPath] = root
+				depsMap, err = depsRecursive(depPkg, goPath, depsMap)
+				if err != nil {
+					return err
+				}
 			}
 
 			return nil
 		},
 	)
-	return roots
+	return depsMap, nil
+}
+
+func isGoroot(importPath string) (bool, error) {
+	pkg, err := build.Import(importPath, "", build.AllowBinary)
+	if err != nil {
+		return false, err
+	}
+	if pkg.Goroot {
+		return true, nil
+	}
+
+	return false, nil
 }
