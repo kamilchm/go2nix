@@ -45,15 +45,6 @@ buildGoPackage rec {
         sha256 = "003ba08eebfc16a586073492dc4cac4894120d4996c842cb22172fa82c4ea287";
       };
     };
-    go2nix = {
-      goPackagePath = "github.com/kamilchm/go2nix";
-
-      src = fetchgit {
-        url = "https://github.com/kamilchm/go2nix";
-        rev = "38719b9ec9069534e57b3ea8de31a6b81c8faf2b";
-        sha256 = "ff7c7299169aca6cac2935253f2ed929bcd933a22f9fc4f54fcefa9335f5f61a";
-      };
-    };
     units = {
       goPackagePath = "github.com/alecthomas/units";
 
