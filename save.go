@@ -14,11 +14,10 @@ import (
 	"time"
 
 	mmvcs "github.com/Masterminds/vcs"
-	govcs "golang.org/x/tools/go/vcs"
 )
 
 var (
-	inSet = struct{}{}
+	excludePath = "example"
 )
 
 type GoPackage struct {
@@ -40,7 +39,7 @@ type VendoredPackage struct {
 
 func save(pkgName, goPath string) error {
 
-	pkg, err := NewPacakge(pkgName, goPath)
+	pkg, err := NewPackage(pkgName, goPath)
 	if err != nil {
 		return err
 	}
@@ -87,16 +86,21 @@ func writeFromTemplate(filename string, data interface{}) error {
 	return nil
 }
 
-func NewPacakge(importPath string, goPath string) (*GoPackage, error) {
-	rr, err := govcs.RepoRootForImportPath(importPath, false)
+func NewPackage(importPath string, goPath string) (*GoPackage, error) {
+	fullPath := goPath + "/src/" + importPath
+
+	repoRoot, err := repoRoot(fullPath)
 	if err != nil {
-		return nil, fmt.Errorf("Can't get repo for import path: %v", err)
+		return nil, fmt.Errorf("Cannot find repo root for %v: %v",
+			fullPath, err)
 	}
 
-	repo, err := mmvcs.NewRepo("", goPath+"/src/"+rr.Root)
+	pkgRoot := strings.TrimPrefix(repoRoot, goPath+"/src/")
+
+	repo, err := mmvcs.NewRepo("", repoRoot)
 	if err != nil {
-		return nil, fmt.Errorf("Error while creating repo for (%v, %v): %v",
-			rr.Repo, goPath+"/src/"+rr.Root, err)
+		return nil, fmt.Errorf("Error while creating repo for %v: %v",
+			repoRoot, err)
 	}
 	revision, err := repo.Version()
 	if err != nil {
@@ -108,14 +112,29 @@ func NewPacakge(importPath string, goPath string) (*GoPackage, error) {
 	}
 
 	return &GoPackage{
-		Name:       nixName(rr.Root),
-		ImportPath: rr.Root,
-		VcsRepo:    rr.Repo,
-		VcsCommand: rr.VCS.Cmd,
+		Name:       nixName(pkgRoot),
+		ImportPath: pkgRoot,
+		VcsRepo:    repo.Remote(),
+		VcsCommand: string(repo.Vcs()),
 		Revision:   revision,
-		Hash:       calculateHash("file://"+repo.LocalPath(), rr.VCS.Cmd),
+		Hash:       calculateHash("file://"+repo.LocalPath(), string(repo.Vcs())),
 		UpdateDate: updateDate,
 	}, nil
+}
+
+func repoRoot(pth string) (string, error) {
+	_, err := mmvcs.DetectVcsFromFS(pth)
+	if err == mmvcs.ErrCannotDetectVCS {
+		if pth == "/" {
+			return pth, err
+		}
+		return repoRoot(path.Dir(pth))
+	}
+	if err != nil {
+		return pth, fmt.Errorf("Error while detecting repo root for %v: %v",
+			pth, err)
+	}
+	return pth, nil
 }
 
 func nixName(goImportPath string) string {
@@ -153,42 +172,60 @@ func depsRecursive(pkg *GoPackage, goPath string, depsMap map[string]*GoPackage)
 		return depsMap, nil
 	}
 
-	log.Println("Anaalyzing", pkg.ImportPath)
+	log.Println("Analyzing", pkg.ImportPath)
 
 	pkgBase := goPath + "/src/" + pkg.ImportPath
-	filepath.Walk(pkgBase,
+
+	err = filepath.Walk(pkgBase,
 		func(pth string, info os.FileInfo, err error) error {
+			if strings.Contains(pth, excludePath) {
+				return nil
+			}
+
 			if !strings.HasSuffix(pth, ".go") {
 				return nil
 			}
 
 			subDir, err := build.ImportDir(path.Dir(pth), build.AllowBinary)
 			if err != nil {
-				return err
+				// no Go buildable package
+				return nil
 			}
-
-			subPkg, err := NewPacakge(subDir.ImportPath, goPath)
+			provided, err := isProvided(subDir.ImportPath)
 			if err != nil {
 				return err
 			}
-			depsMap[subPkg.ImportPath] = subPkg
+			if provided {
+				return nil
+			}
+
+			if _, exist := depsMap[subDir.ImportPath]; exist {
+				return nil
+			}
+
+			subPkg, err := NewPackage(subDir.ImportPath, goPath)
+			if err != nil {
+				return fmt.Errorf("Cannot create package %v: %v", subDir.ImportPath, err)
+			}
+			depsMap[subDir.ImportPath] = subPkg
 
 			allImports := append(subDir.Imports, subDir.TestImports...)
 
 			for _, imp := range allImports {
-				goroot, err := isGoroot(imp)
+				provided, err := isProvided(imp)
 				if err != nil {
 					return err
 				}
-				if goroot {
+				if provided {
 					continue
 				}
 
-				depPkg, err := NewPacakge(imp, goPath)
+				depPkg, err := NewPackage(imp, goPath)
 				if err != nil {
 					return err
 				}
 
+				//depsMap[imp] = depPkg
 				depsMap, err = depsRecursive(depPkg, goPath, depsMap)
 				if err != nil {
 					return err
@@ -198,13 +235,23 @@ func depsRecursive(pkg *GoPackage, goPath string, depsMap map[string]*GoPackage)
 			return nil
 		},
 	)
+
+	if err != nil {
+		return depsMap, err
+	}
 	return depsMap, nil
 }
 
-func isGoroot(importPath string) (bool, error) {
+func isProvided(importPath string) (bool, error) {
+	if importPath == "C" {
+		return true, nil
+	}
+	if importPath == "." {
+		return true, nil
+	}
 	pkg, err := build.Import(importPath, "", build.AllowBinary)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("Cannot import %v: %v", importPath, err)
 	}
 	if pkg.Goroot {
 		return true, nil
