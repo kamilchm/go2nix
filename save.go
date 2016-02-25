@@ -5,20 +5,25 @@ package main
 import (
 	"fmt"
 	"go/build"
-	"log"
 	"os"
 	"path"
-	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
 	"time"
 
-	mmvcs "github.com/Masterminds/vcs"
+	"github.com/Masterminds/vcs"
 )
 
 var (
 	excludePath = "example"
 )
+
+type context struct {
+	soFar map[string]bool
+	ctx   build.Context
+	dir   string
+}
 
 type GoPackage struct {
 	Name       string
@@ -44,19 +49,28 @@ func save(pkgName, goPath string) error {
 		return err
 	}
 
-	deps, err := discoverDeps(pkg, goPath)
+	deps, err := findDeps(pkgName, goPath, true)
 	if err != nil {
 		return err
 	}
 
+	pkgsSoFar := make(map[string]bool)
+	var depsPkgs []*GoPackage
 	for _, dep := range deps {
-		log.Println(dep.ImportPath)
+		p, err := NewPackage(dep, goPath)
+		if err != nil {
+			return fmt.Errorf("Can't create package for: %v", dep)
+		}
+		if !pkgsSoFar[p.ImportPath] {
+			depsPkgs = append(depsPkgs, p)
+			pkgsSoFar[p.ImportPath] = true
+		}
 	}
 
 	pkgDef := struct {
 		Pkg  *GoPackage
 		Deps []*GoPackage
-	}{pkg, deps}
+	}{pkg, depsPkgs}
 
 	if err = writeFromTemplate("default.nix", pkgDef); err != nil {
 		return err
@@ -97,7 +111,7 @@ func NewPackage(importPath string, goPath string) (*GoPackage, error) {
 
 	pkgRoot := strings.TrimPrefix(repoRoot, goPath+"/src/")
 
-	repo, err := mmvcs.NewRepo("", repoRoot)
+	repo, err := vcs.NewRepo("", repoRoot)
 	if err != nil {
 		return nil, fmt.Errorf("Error while creating repo for %v: %v",
 			repoRoot, err)
@@ -123,8 +137,8 @@ func NewPackage(importPath string, goPath string) (*GoPackage, error) {
 }
 
 func repoRoot(pth string) (string, error) {
-	_, err := mmvcs.DetectVcsFromFS(pth)
-	if err == mmvcs.ErrCannotDetectVCS {
+	_, err := vcs.DetectVcsFromFS(pth)
+	if err == vcs.ErrCannotDetectVCS {
 		if pth == "/" {
 			return pth, err
 		}
@@ -142,120 +156,54 @@ func nixName(goImportPath string) string {
 	return strings.Replace(parts[len(parts)-1], ".", "-", -1)
 }
 
-func discoverDeps(pkg *GoPackage, goPath string) ([]*GoPackage, error) {
-	depsMap := make(map[string]*GoPackage)
-	depsMap, err := depsRecursive(pkg, goPath, depsMap)
-	if err != nil {
+func findDeps(name, gopath string, testImports bool) ([]string, error) {
+	ctx := build.Default
+	if gopath != "" {
+		ctx.GOPATH = gopath
+	}
+	c := &context{
+		soFar: make(map[string]bool),
+		ctx:   ctx,
+		dir:   gopath + "/src/" + name,
+	}
+	if err := c.find(name, testImports); err != nil {
 		return nil, err
 	}
-
-	rrSet := make(map[string]*GoPackage)
-	for _, pkg := range depsMap {
-		if _, exist := rrSet[pkg.ImportPath]; !exist {
-			rrSet[pkg.ImportPath] = pkg
+	var deps []string
+	for p := range c.soFar {
+		if p != name {
+			deps = append(deps, p)
 		}
 	}
-
-	packages := make([]*GoPackage, len(rrSet))
-
-	i := 0
-	for _, pkg := range rrSet {
-		packages[i] = pkg
-		i++
-	}
-
-	return packages, nil
+	sort.Strings(deps)
+	return deps, nil
 }
 
-func depsRecursive(pkg *GoPackage, goPath string, depsMap map[string]*GoPackage) (packages map[string]*GoPackage, err error) {
-	if _, exist := depsMap[pkg.ImportPath]; exist {
-		return depsMap, nil
+func (c *context) find(name string, testImports bool) error {
+	if name == "C" {
+		return nil
 	}
-
-	log.Println("Analyzing", pkg.ImportPath)
-
-	pkgBase := goPath + "/src/" + pkg.ImportPath
-
-	err = filepath.Walk(pkgBase,
-		func(pth string, info os.FileInfo, err error) error {
-			if strings.Contains(pth, excludePath) {
-				return nil
-			}
-
-			if !strings.HasSuffix(pth, ".go") {
-				return nil
-			}
-
-			subDir, err := build.ImportDir(path.Dir(pth), build.AllowBinary)
-			if err != nil {
-				// no Go buildable package
-				return nil
-			}
-			provided, err := isProvided(subDir.ImportPath)
-			if err != nil {
-				return err
-			}
-			if provided {
-				return nil
-			}
-
-			if _, exist := depsMap[subDir.ImportPath]; exist {
-				return nil
-			}
-
-			subPkg, err := NewPackage(subDir.ImportPath, goPath)
-			if err != nil {
-				return fmt.Errorf("Cannot create package %v: %v", subDir.ImportPath, err)
-			}
-			depsMap[subDir.ImportPath] = subPkg
-
-			allImports := append(subDir.Imports, subDir.TestImports...)
-
-			for _, imp := range allImports {
-				provided, err := isProvided(imp)
-				if err != nil {
-					return err
-				}
-				if provided {
-					continue
-				}
-
-				depPkg, err := NewPackage(imp, goPath)
-				if err != nil {
-					return err
-				}
-
-				//depsMap[imp] = depPkg
-				depsMap, err = depsRecursive(depPkg, goPath, depsMap)
-				if err != nil {
-					return err
-				}
-			}
-
-			return nil
-		},
-	)
-
+	pkg, err := c.ctx.Import(name, c.dir, 0)
 	if err != nil {
-		return depsMap, err
-	}
-	return depsMap, nil
-}
-
-func isProvided(importPath string) (bool, error) {
-	if importPath == "C" {
-		return true, nil
-	}
-	if importPath == "." {
-		return true, nil
-	}
-	pkg, err := build.Import(importPath, "", build.AllowBinary)
-	if err != nil {
-		return false, fmt.Errorf("Cannot import %v: %v", importPath, err)
+		return err
 	}
 	if pkg.Goroot {
-		return true, nil
+		return nil
 	}
 
-	return false, nil
+	if name != "." {
+		c.soFar[pkg.ImportPath] = true
+	}
+	imports := pkg.Imports
+	if testImports {
+		imports = append(imports, pkg.TestImports...)
+	}
+	for _, imp := range imports {
+		if !c.soFar[imp] {
+			if err := c.find(imp, testImports); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
