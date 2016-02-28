@@ -19,6 +19,8 @@ func main() {
 	saveCmd := app.Command("save", "Saves dependencies for cwd and current GOPATH")
 	testImports := saveCmd.Flag("test-imports", "Include test imports.").Short('t').Bool()
 
+	buildTags := saveCmd.Flag("tags", "the dependencies will be generated with the specified build tags").String()
+
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case saveCmd.FullCommand():
 		goPath := os.Getenv("GOPATH")
@@ -29,7 +31,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if err := save(currPkg, goPath, *testImports); err != nil {
+		buildTagsList := strings.Split(*buildTags, ",")
+		if err := save(currPkg, goPath, *testImports, buildTagsList); err != nil {
 			log.Fatal(err)
 		}
 	}
