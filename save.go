@@ -42,14 +42,14 @@ type VendoredPackage struct {
 	PkgDir     string
 }
 
-func save(pkgName, goPath string) error {
+func save(pkgName, goPath string, buildTags []string) error {
 
 	pkg, err := NewPackage(pkgName, goPath)
 	if err != nil {
 		return err
 	}
 
-	deps, err := findDeps(pkgName, goPath, true)
+	deps, err := findDeps(pkgName, goPath, true, buildTags)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,8 @@ func save(pkgName, goPath string) error {
 	pkgDef := struct {
 		Pkg  *GoPackage
 		Deps []*GoPackage
-	}{pkg, depsPkgs}
+		BuildTags string
+	}{pkg, depsPkgs, strings.Join(buildTags, ",")}
 
 	if err = writeFromTemplate("default.nix", pkgDef); err != nil {
 		return err
@@ -156,8 +157,10 @@ func nixName(goImportPath string) string {
 	return strings.Replace(parts[len(parts)-1], ".", "-", -1)
 }
 
-func findDeps(name, gopath string, testImports bool) ([]string, error) {
+func findDeps(name, gopath string, testImports bool, buildTags []string) ([]string, error) {
 	ctx := build.Default
+	ctx.BuildTags = buildTags
+
 	if gopath != "" {
 		ctx.GOPATH = gopath
 	}

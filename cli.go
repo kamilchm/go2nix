@@ -17,6 +17,7 @@ func main() {
 	app := kingpin.New("go2nix", "Nix derivations for Go packages")
 
 	saveCmd := app.Command("save", "Saves dependencies for cwd and current GOPATH")
+	buildTags := saveCmd.Flag("tags", "Build tags.").String()
 
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case saveCmd.FullCommand():
@@ -28,7 +29,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if err := save(currPkg, goPath); err != nil {
+		buildTagsList := strings.Split(*buildTags, ",")
+		if err := save(currPkg, goPath, buildTagsList); err != nil {
 			log.Fatal(err)
 		}
 	}
