@@ -42,14 +42,14 @@ type VendoredPackage struct {
 	PkgDir     string
 }
 
-func save(pkgName, goPath string) error {
+func save(pkgName, goPath string, testImports bool) error {
 
 	pkg, err := NewPackage(pkgName, goPath)
 	if err != nil {
 		return err
 	}
 
-	deps, err := findDeps(pkgName, goPath, true)
+	deps, err := findDeps(pkgName, goPath, testImports)
 	if err != nil {
 		return err
 	}
