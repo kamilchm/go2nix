@@ -18,8 +18,8 @@ buildGoPackage rec {
     sha256 = "[[ .Pkg.Hash ]]";
   };
 
-  extraSrcs = (builtins.attrValues rec {
-    [[ range $dep := .Deps ]][[ $dep.Name ]] = {
+  extraSrcs = [
+    [[ range $dep := .Deps ]]{
       goPackagePath = "[[ $dep.ImportPath ]]";
 
       src = fetch[[ $dep.VcsCommand ]] {
@@ -27,12 +27,12 @@ buildGoPackage rec {
         rev = "[[ $dep.Revision ]]";
         sha256 = "[[ $dep.Hash ]]";
       };
-    };
-    [[ range $vend := $dep.Vendored ]][[ $vend.Name ]] = {
+    }
+    [[ range $vend := $dep.Vendored ]]{
       goPackagePath = "[[ $vend.ImportPath ]]";
 
       src = "${[[ $dep.Name ]].src}/[[ $vend.PkgDir ]]";
-    };
+    }
     [[ end ]][[ end ]] # can be improved with Go 1.6 http://talks.golang.org/2016/state-of-go.slide#14
-  });
+  ];
 }
