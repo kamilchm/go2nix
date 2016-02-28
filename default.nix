@@ -26,7 +26,8 @@ buildGoPackage rec {
     wrapProgram $bin/bin/go2nix \
       ${lib.flip lib.concatMapStrings vcss (vcs: ''
         --prefix PATH : ${vcs}/bin \
-      '')}
+      '')} \
+      --prefix PATH : ${git}/bin
   '';
 
   extraSrcs = (builtins.attrValues rec {
