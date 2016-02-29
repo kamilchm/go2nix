@@ -12,11 +12,18 @@ func calculateHash(url, pathType string) (hash string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return hashFromNixPrefetch(prefetchOut)
+	return hashFromNixPrefetch(pathType, prefetchOut)
 }
 
-func hashFromNixPrefetch(prefetchOut []byte) string {
+func hashFromNixPrefetch(pathType string, prefetchOut []byte) string {
 	prefetchStr := strings.TrimSpace(string(prefetchOut))
 	prefetchLines := strings.Split(prefetchStr, "\n")
-	return prefetchLines[len(prefetchLines)-1]
+
+	// nix-prefetch-git after https://github.com/NixOS/nixpkgs/pull/11671
+	if pathType == "git" && prefetchLines[len(prefetchLines)-1][0] == '}' {
+		return prefetchLines[len(prefetchLines)-2]
+	}
+
+	// regular nix-prefetch-* output
+	return "  sha512 = \"" + prefetchLines[len(prefetchLines)-1] + "\""
 }
