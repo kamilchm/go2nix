@@ -7,7 +7,15 @@ import (
 )
 
 func calculateHash(url, pathType string) (hash string) {
-	prefetchCmd := exec.Command("nix-prefetch-"+pathType, url)
+	args := []string{}
+
+	if pathType == "git" {
+		// `fetchgit` passes this argument by default
+		args = append(args, "--fetch-submodules")
+	}
+
+	args = append(args, url)
+	prefetchCmd := exec.Command("nix-prefetch-"+pathType, args...)
 	prefetchOut, err := prefetchCmd.Output()
 	if err != nil {
 		log.Fatal(err)
