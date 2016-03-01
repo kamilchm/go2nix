@@ -15,7 +15,7 @@ buildGoPackage rec {
   src = fetchgit {
     inherit rev;
     url = "[[ .Pkg.VcsRepo ]]";
-    sha256 = "[[ .Pkg.Hash ]]";
+  [[ .Pkg.Hash ]]
   };
 
   extraSrcs = (builtins.attrValues rec {
@@ -25,7 +25,7 @@ buildGoPackage rec {
       src = fetch[[ $dep.VcsCommand ]] {
         url = "[[ $dep.VcsRepo ]]";
         rev = "[[ $dep.Revision ]]";
-        sha256 = "[[ $dep.Hash ]]";
+        [[ $dep.Hash ]]
       };
     };
     [[ range $vend := $dep.Vendored ]][[ $vend.Name ]] = {
