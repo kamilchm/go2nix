@@ -14,6 +14,8 @@ buildGoPackage rec {
 
   preBuild = ''go generate ./...'';
 
+  allowGoReference = true;
+
   extraSrcs = (builtins.attrValues rec {
     vcs = {
       goPackagePath = "github.com/Masterminds/vcs";
