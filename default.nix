@@ -3,16 +3,32 @@ with import <nixpkgs> {};
 
 with goPackages;
 
+let
+  vcss = [
+    nix-prefetch-git
+    # nix-prefetch-svn
+    # nix-prefetch-bzr
+    # nix-prefetch-hg
+  ];
+in
+
 buildGoPackage rec {
   name = "go2nix-${version}";
   version = "dev";
 
-  buildInputs = [ go-bindata.bin tools.bin ];
+  buildInputs = [ makeWrapper go-bindata.bin tools.bin ];
   goPackagePath = "github.com/kamilchm/go2nix";
 
   src = ./.;
 
   preBuild = ''go generate ./...'';
+  postInstall = ''
+    wrapProgram $bin/bin/go2nix \
+      ${lib.flip lib.concatMapStrings vcss (vcs: ''
+        --prefix PATH : ${vcs}/bin \
+      '')} \
+      --prefix PATH : ${git}/bin
+  '';
 
   allowGoReference = true;
 
