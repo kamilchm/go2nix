@@ -1,3 +1,5 @@
+[![Circle CI](https://circleci.com/gh/kamilchm/go2nix.svg?style=shield)](https://circleci.com/gh/kamilchm/go2nix)
+
 # go2nix
 
 ### TODO
