@@ -1,0 +1,14 @@
+dependencies:
+  cache_directories:
+    - ~/nix_out
+    - ./result
+  override:
+    - sudo mkdir /nix
+    - sudo chown ubuntu /nix
+    - curl https://nixos.org/nix/install | sh
+    - echo "source ~/.nix-profile/etc/profile.d/nix.sh" >> ~/.circlerc
+    - mkdir ~/nix_out
+
+test:
+  override:
+    - nix-build
