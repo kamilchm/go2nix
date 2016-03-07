@@ -10,6 +10,9 @@ buildGoPackage rec {
   rev = "[[ .Pkg.Revision ]]";
 
   buildInputs = [ go ];
+  [[ if ne .BuildTags "" ]]
+  buildFlags = "--tags [[ .BuildTags ]]";
+  [[ end ]]
   goPackagePath = "[[ .Pkg.ImportPath ]]";
 
   src = fetchgit {
