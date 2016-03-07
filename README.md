@@ -2,7 +2,7 @@
 
 # go2nix
 
-### TODO
+### Related Works
 
 * https://github.com/golang/go/blob/master/src/cmd/go/list.go
 * https://github.com/cespare/deplist
