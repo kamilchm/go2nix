@@ -17,6 +17,7 @@ func main() {
 	app := kingpin.New("go2nix", "Nix derivations for Go packages")
 
 	saveCmd := app.Command("save", "Saves dependencies for cwd and current GOPATH")
+	testImports := saveCmd.Flag("test-imports", "Include test imports.").Short('t').Bool()
 
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case saveCmd.FullCommand():
@@ -28,7 +29,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if err := save(currPkg, goPath); err != nil {
+		if err := save(currPkg, goPath, *testImports); err != nil {
 			log.Fatal(err)
 		}
 	}
