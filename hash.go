@@ -45,5 +45,5 @@ func hashFromNixPrefetch(pathType string, prefetchOut []byte) string {
 	}
 
 	// regular nix-prefetch-* output
-	return "  sha512 = \"" + prefetchLines[len(prefetchLines)-1] + "\""
+	return prefetchLines[len(prefetchLines)-1];
 }
