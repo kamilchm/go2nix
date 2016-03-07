@@ -3,11 +3,11 @@ dependencies:
     - ~/nix_out
     - ./result
   override:
-    - sudo mkdir /nix
+    - sudo mkdir -p /nix
     - sudo chown ubuntu /nix
     - curl https://nixos.org/nix/install | sh
     - echo "source ~/.nix-profile/etc/profile.d/nix.sh" >> ~/.circlerc
-    - mkdir ~/nix_out
+    - mkdir -p ~/nix_out
 
 test:
   override:
