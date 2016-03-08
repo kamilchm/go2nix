@@ -42,7 +42,7 @@ type VendoredPackage struct {
 	PkgDir     string
 }
 
-func save(pkgName, goPath string, testImports bool, buildTags []string) error {
+func save(pkgName, goPath, nixFile string, testImports bool, buildTags []string) error {
 
 	pkg, err := NewPackage(pkgName, goPath)
 	if err != nil {
@@ -73,7 +73,7 @@ func save(pkgName, goPath string, testImports bool, buildTags []string) error {
 		BuildTags string
 	}{pkg, depsPkgs, strings.Join(buildTags, ",")}
 
-	if err = writeFromTemplate("default.nix", pkgDef); err != nil {
+	if err = writeFromTemplate(nixFile, pkgDef); err != nil {
 		return err
 	}
 
@@ -81,7 +81,7 @@ func save(pkgName, goPath string, testImports bool, buildTags []string) error {
 }
 
 func writeFromTemplate(filename string, data interface{}) error {
-	templateData, err := Asset("templates/" + filename)
+	templateData, err := Asset("templates/default.nix")
 	if err != nil {
 		return err
 	}

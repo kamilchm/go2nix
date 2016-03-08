@@ -16,10 +16,16 @@ import (
 func main() {
 	app := kingpin.New("go2nix", "Nix derivations for Go packages")
 
-	saveCmd := app.Command("save", "Saves dependencies for cwd and current GOPATH")
-	testImports := saveCmd.Flag("test-imports", "Include test imports.").Short('t').Bool()
-
-	buildTags := saveCmd.Flag("tags", "the dependencies will be generated with the specified build tags").String()
+	saveCmd := app.Command("save",
+		"Saves dependencies for cwd and current GOPATH")
+	outputFile := saveCmd.Flag("output",
+		"Write the resulting nix file to the named output file").
+		Short('o').Default("default.nix").String()
+	testImports := saveCmd.Flag("test-imports",
+		"Include test imports.").Short('t').Bool()
+	buildTags := saveCmd.Flag("tags",
+		"the dependencies will be generated with the specified build tags").
+		String()
 
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case saveCmd.FullCommand():
@@ -32,7 +38,8 @@ func main() {
 			log.Fatal(err)
 		}
 		buildTagsList := strings.Split(*buildTags, ",")
-		if err := save(currPkg, goPath, *testImports, buildTagsList); err != nil {
+		if err := save(currPkg, goPath, *outputFile,
+			*testImports, buildTagsList); err != nil {
 			log.Fatal(err)
 		}
 	}
