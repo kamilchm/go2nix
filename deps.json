@@ -1,0 +1,38 @@
+[
+  {
+    "goPackagePath": "github.com/Masterminds/vcs",
+    "fetch": {
+      "type": "git",
+      "url": "https://github.com/Masterminds/vcs",
+      "rev": "9c0db6583837118d5df7c2ae38ab1c194e434b35",
+      "sha256": "1lskq9jm6g4cqpl0digf17dsqqf49a28l6va64gy1l88i9v6xr0r"
+    }
+  },
+  {
+    "goPackagePath": "github.com/alecthomas/template",
+    "fetch": {
+      "type": "git",
+      "url": "https://github.com/alecthomas/template",
+      "rev": "14fd436dd20c3cc65242a9f396b61bfc8a3926fc",
+      "sha256": "19rzvvcgvr1z2wz9xpqsmlm8syizbpxjp5zbzgakvrqlajpbjvx2"
+    }
+  },
+  {
+    "goPackagePath": "github.com/alecthomas/units",
+    "fetch": {
+      "type": "git",
+      "url": "https://github.com/alecthomas/units",
+      "rev": "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a",
+      "sha256": "1j65b91qb9sbrml9cpabfrcf07wmgzzghrl7809hjjhrmbzri5bl"
+    }
+  },
+  {
+    "goPackagePath": "gopkg.in/alecthomas/kingpin.v2",
+    "fetch": {
+      "type": "git",
+      "url": "https://gopkg.in/alecthomas/kingpin.v2",
+      "rev": "8cccfa8eb2e3183254457fb1749b2667fbc364c7",
+      "sha256": "14ajr7qnkz7dj745blzf5y47w37kxnvsas1j53lm8psnkgw675vd"
+    }
+  }
+]
