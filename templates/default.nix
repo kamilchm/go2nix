@@ -19,21 +19,14 @@ buildGoPackage rec {
     sha256 = "[[ .Pkg.Hash ]]";
   };
 
-  extraSrcs = [
-    [[ range $dep := .Deps ]]{
-      goPackagePath = "[[ $dep.ImportPath ]]";
-
-      src = fetch[[ $dep.VcsCommand ]] {
-        url = "[[ $dep.VcsRepo ]]";
-        rev = "[[ $dep.Revision ]]";
-        sha256 = "[[ $dep.Hash ]]";
-      };
+  extraSrcs = map ( jsonDep:
+    {
+      inherit (jsonDep) goPackagePath;
+      src = if jsonDep.fetch.type == "git" then
+        fetchgit {
+          inherit (jsonDep.fetch) url rev sha256;
+        }
+        else {};
     }
-    [[ range $vend := $dep.Vendored ]]{
-      goPackagePath = "[[ $vend.ImportPath ]]";
-
-      src = "${[[ $dep.Name ]].src}/[[ $vend.PkgDir ]]";
-    }
-    [[ end ]][[ end ]] # can be improved with Go 1.6 http://talks.golang.org/2016/state-of-go.slide#14
-  ];
+  ) (builtins.fromJSON (builtins.readFile ./deps.json));
 }

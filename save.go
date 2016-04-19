@@ -3,6 +3,7 @@ package main
 // go:generate go-bindata .
 
 import (
+	"encoding/json"
 	"fmt"
 	"go/build"
 	"os"
@@ -23,6 +24,18 @@ type context struct {
 	soFar map[string]bool
 	ctx   build.Context
 	dir   string
+}
+
+type NixDepenency struct {
+	GoPackagePath string      `json:"goPackagePath"`
+	Fetch         interface{} `json:"fetch"`
+}
+
+type FetchGit struct {
+	Type   string `json:"type"`
+	Url    string `json:"url"`
+	Rev    string `json:"rev"`
+	Sha256 string `json:"sha256"`
 }
 
 type GoPackage struct {
@@ -55,26 +68,57 @@ func save(pkgName, goPath, nixFile string, testImports bool, buildTags []string)
 	}
 
 	pkgsSoFar := make(map[string]bool)
-	var depsPkgs []*GoPackage
+	var depsPkgs []*NixDepenency
 	for _, dep := range deps {
 		p, err := NewPackage(dep, goPath)
 		if err != nil {
 			return fmt.Errorf("Can't create package for: %v", dep)
 		}
 		if !pkgsSoFar[p.ImportPath] {
-			depsPkgs = append(depsPkgs, p)
+			depsPkgs = append(depsPkgs, &NixDepenency{
+				GoPackagePath: p.ImportPath,
+				Fetch: FetchGit{
+					Type:   "git",
+					Url:    p.VcsRepo,
+					Rev:    p.Revision,
+					Sha256: p.Hash,
+				},
+			})
 			pkgsSoFar[p.ImportPath] = true
 		}
 	}
 
+	if err := saveDeps(depsPkgs); err != nil {
+		return err
+	}
+
 	pkgDef := struct {
 		Pkg       *GoPackage
-		Deps      []*GoPackage
 		BuildTags string
-	}{pkg, depsPkgs, strings.Join(buildTags, ",")}
+	}{pkg, strings.Join(buildTags, ",")}
 
 	if err = writeFromTemplate(nixFile, pkgDef); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func saveDeps(deps []*NixDepenency) error {
+	depsFile, err := os.Create("deps.json")
+	if err != nil {
+		return err
+	}
+	defer depsFile.Close()
+
+	j, jerr := json.MarshalIndent(deps, "", "  ")
+	if jerr != nil {
+		fmt.Println("jerr:", jerr.Error())
+	}
+
+	_, werr := depsFile.Write(j)
+	if werr != nil {
+		fmt.Println("werr:", werr.Error())
 	}
 
 	return nil
