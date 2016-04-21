@@ -3,35 +3,23 @@ with import <nixpkgs> {};
 
 with goPackages;
 
-let
-  vcss = [
-    nix-prefetch-git
-    # nix-prefetch-svn
-    # nix-prefetch-bzr
-    # nix-prefetch-hg
-  ];
+buildGoPackage rec {
+  name = "go2nix-${version}";
+  version = "20160308-${stdenv.lib.strings.substring 0 7 rev}";
+  rev = "fd5dacf1a8da65964be801052eada09ca29c8650";
   
-  generated = import ./generated.nix {
-    inherit stdenv lib goPackages fetchgit fetchhg fetchbzr fetchsvn;
-  };
-in
-
-pkgs.lib.overrideDerivation generated (old: {
-  name = "go2nix";
-
-  buildInputs = [ makeWrapper go-bindata.bin tools.bin ];
+  goPackagePath = "github.com/kamilchm/go2nix";
 
   src = ./.;
 
-  allowGoReference = true;
-
-  preBuild = ''go generate ./...'';
-  postInstall = ''
-    wrapProgram $bin/bin/go2nix \
-      ${lib.flip lib.concatMapStrings vcss (vcs: ''
-        --prefix PATH : ${vcs}/bin \
-      '')} \
-      --prefix PATH : ${git}/bin
-  '';
-
-})
+  extraSrcs = map ( jsonDep:
+    {
+      inherit (jsonDep) goPackagePath;
+      src = if jsonDep.fetch.type == "git" then
+        fetchgit {
+          inherit (jsonDep.fetch) url rev sha256;
+        }
+        else {};
+    }
+  ) (builtins.fromJSON (builtins.readFile ./deps.json));
+}
