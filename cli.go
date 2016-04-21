@@ -9,40 +9,43 @@ import (
 	"os"
 	"strings"
 
-	"gopkg.in/alecthomas/kingpin.v2"
+	"github.com/jawher/mow.cli"
 )
 
 // go2nix entry-point
 func main() {
-	app := kingpin.New("go2nix", "Nix derivations for Go packages")
+	go2nix := cli.App("go2nix", "Nix derivations for Go packages")
 
-	saveCmd := app.Command("save",
-		"Saves dependencies for cwd and current GOPATH")
-	outputFile := saveCmd.Flag("output",
-		"Write the resulting nix file to the named output file").
-		Short('o').Default("default.nix").String()
-	testImports := saveCmd.Flag("test-imports",
-		"Include test imports.").Short('t').Bool()
-	buildTags := saveCmd.Flag("tags",
-		"the dependencies will be generated with the specified build tags").
-		String()
+	go2nix.Command("save", "Saves dependecies for cwd within GOPATH", func(cmd *cli.Cmd) {
+		outputFile := cmd.StringOpt("o output", "default.nix",
+			"Write the resulting nix file to the named output file")
+		depsFile := cmd.StringOpt("d deps-file", "deps.json",
+			"Write the resulting dependencies file to the named output file")
+		reuseDeps := cmd.StringsOpt("r reuse-deps", nil,
+			"Reuse dependencies from other deps files")
+		testImports := cmd.BoolOpt("t test-imports", false,
+			"Include test imports.")
+		buildTags := cmd.StringOpt("tags", "",
+			"the dependencies will be generated with the specified build tags")
 
-	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
-	case saveCmd.FullCommand():
-		goPath := os.Getenv("GOPATH")
-		if goPath == "" {
-			log.Fatal("No GOPATH set, can't find dependencies")
+		cmd.Action = func() {
+			goPath := os.Getenv("GOPATH")
+			if goPath == "" {
+				log.Fatal("No GOPATH set, can't find dependencies")
+			}
+			currPkg, err := currentPackage(goPath)
+			if err != nil {
+				log.Fatal(err)
+			}
+			buildTagsList := strings.Split(*buildTags, ",")
+			if err := save(currPkg, goPath, *outputFile, *depsFile, *reuseDeps,
+				*testImports, buildTagsList); err != nil {
+				log.Fatal(err)
+			}
 		}
-		currPkg, err := currentPackage(goPath)
-		if err != nil {
-			log.Fatal(err)
-		}
-		buildTagsList := strings.Split(*buildTags, ",")
-		if err := save(currPkg, goPath, *outputFile,
-			*testImports, buildTagsList); err != nil {
-			log.Fatal(err)
-		}
-	}
+	})
+
+	go2nix.Run(os.Args)
 }
 
 func currentPackage(goPath string) (string, error) {

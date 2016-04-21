@@ -1,16 +1,11 @@
 package main
 
-// go:generate go-bindata .
-
 import (
-	"encoding/json"
 	"fmt"
 	"go/build"
-	"os"
 	"path"
 	"sort"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/Masterminds/vcs"
@@ -24,18 +19,6 @@ type context struct {
 	soFar map[string]bool
 	ctx   build.Context
 	dir   string
-}
-
-type NixDepenency struct {
-	GoPackagePath string      `json:"goPackagePath"`
-	Fetch         interface{} `json:"fetch"`
-}
-
-type FetchGit struct {
-	Type   string `json:"type"`
-	Url    string `json:"url"`
-	Rev    string `json:"rev"`
-	Sha256 string `json:"sha256"`
 }
 
 type GoPackage struct {
@@ -55,7 +38,7 @@ type VendoredPackage struct {
 	PkgDir     string
 }
 
-func save(pkgName, goPath, nixFile string, testImports bool, buildTags []string) error {
+func save(pkgName, goPath, nixFile string, depsFile string, reuseDeps []string, testImports bool, buildTags []string) error {
 
 	pkg, err := NewPackage(pkgName, goPath)
 	if err != nil {
@@ -88,7 +71,7 @@ func save(pkgName, goPath, nixFile string, testImports bool, buildTags []string)
 		}
 	}
 
-	if err := saveDeps(depsPkgs); err != nil {
+	if err := saveDeps(depsPkgs, depsFile); err != nil {
 		return err
 	}
 
@@ -101,47 +84,6 @@ func save(pkgName, goPath, nixFile string, testImports bool, buildTags []string)
 		return err
 	}
 
-	return nil
-}
-
-func saveDeps(deps []*NixDepenency) error {
-	depsFile, err := os.Create("deps.json")
-	if err != nil {
-		return err
-	}
-	defer depsFile.Close()
-
-	j, jerr := json.MarshalIndent(deps, "", "  ")
-	if jerr != nil {
-		fmt.Println("jerr:", jerr.Error())
-	}
-
-	_, werr := depsFile.Write(j)
-	if werr != nil {
-		fmt.Println("werr:", werr.Error())
-	}
-
-	return nil
-}
-
-func writeFromTemplate(filename string, data interface{}) error {
-	templateData, err := Asset("templates/default.nix")
-	if err != nil {
-		return err
-	}
-
-	t, err := template.New(filename).Delims("[[", "]]").Parse(string(templateData))
-	if err != nil {
-		return err
-	}
-
-	target, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer target.Close()
-
-	t.Execute(target, data)
 	return nil
 }
 
@@ -194,11 +136,6 @@ func repoRoot(pth string) (string, error) {
 			pth, err)
 	}
 	return pth, nil
-}
-
-func nixName(goImportPath string) string {
-	parts := strings.Split(goImportPath, "/")
-	return strings.Replace(parts[len(parts)-1], ".", "-", -1)
 }
 
 func findDeps(name, gopath string, testImports bool, buildTags []string) ([]string, error) {
