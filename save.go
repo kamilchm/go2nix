@@ -38,7 +38,7 @@ type VendoredPackage struct {
 	PkgDir     string
 }
 
-func save(pkgName, goPath, nixFile string, depsFile string, reuseDeps []string, testImports bool, buildTags []string) error {
+func save(pkgName, goPath, nixFile string, depsFile string, testImports bool, buildTags []string) error {
 
 	pkg, err := NewPackage(pkgName, goPath)
 	if err != nil {

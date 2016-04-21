@@ -21,8 +21,6 @@ func main() {
 			"Write the resulting nix file to the named output file")
 		depsFile := cmd.StringOpt("d deps-file", "deps.json",
 			"Write the resulting dependencies file to the named output file")
-		reuseDeps := cmd.StringsOpt("r reuse-deps", nil,
-			"Reuse dependencies from other deps files")
 		testImports := cmd.BoolOpt("t test-imports", false,
 			"Include test imports.")
 		buildTags := cmd.StringOpt("tags", "",
@@ -38,8 +36,21 @@ func main() {
 				log.Fatal(err)
 			}
 			buildTagsList := strings.Split(*buildTags, ",")
-			if err := save(currPkg, goPath, *outputFile, *depsFile, *reuseDeps,
+			if err := save(currPkg, goPath, *outputFile, *depsFile,
 				*testImports, buildTagsList); err != nil {
+				log.Fatal(err)
+			}
+		}
+	})
+
+	go2nix.Command("merge", "Takes deps from one file and tries to merge it into another one", func(cmd *cli.Cmd) {
+		srcFile := cmd.StringArg("SRC", "",
+			"File with dependencies to merge into DST")
+		dstFile := cmd.StringArg("DST", "",
+			"Where to merge dependencies?")
+
+		cmd.Action = func() {
+			if err := MergeDeps(*srcFile, *dstFile); err != nil {
 				log.Fatal(err)
 			}
 		}

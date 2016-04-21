@@ -12,8 +12,8 @@ import (
 )
 
 type NixDepenency struct {
-	GoPackagePath string      `json:"goPackagePath"`
-	Fetch         interface{} `json:"fetch"`
+	GoPackagePath string   `json:"goPackagePath"`
+	Fetch         FetchGit `json:"fetch"`
 }
 
 type FetchGit struct {
@@ -21,6 +21,67 @@ type FetchGit struct {
 	Url    string `json:"url"`
 	Rev    string `json:"rev"`
 	Sha256 string `json:"sha256"`
+}
+
+func MergeDeps(srcFile string, dstFile string) error {
+	srcDepsList, err := loadDeps(srcFile)
+	if err != nil {
+		return err
+	}
+	dstDepsList, err := loadDeps(dstFile)
+	if err != nil {
+		return err
+	}
+
+	srcDeps := groupBySource(srcDepsList)
+	dstDeps := groupBySource(dstDepsList)
+
+	var newSrcDeps []*NixDepenency
+	var newDstDeps []*NixDepenency
+
+	for packagePath, srcDep := range srcDeps {
+		if dstDep, exist := dstDeps[packagePath]; exist {
+			if srcDep.Fetch.Rev == dstDep.Fetch.Rev {
+				fmt.Printf("Same version of %v found in both files, removing from %v\n",
+					packagePath, srcFile)
+				newDstDeps = append(newDstDeps, dstDep)
+			} else {
+				fmt.Printf("Package %v found in both files but in they use different version. You need to agree on its version manually.\n")
+				newSrcDeps = append(newSrcDeps, srcDep)
+				newDstDeps = append(newDstDeps, dstDep)
+			}
+		} else {
+			fmt.Printf("Moving %v from %v to %v\n", packagePath, srcFile, dstFile)
+			dstDeps[packagePath] = srcDep
+			newDstDeps = append(newDstDeps, srcDep)
+		}
+	}
+
+	if len(newSrcDeps) == 0 {
+		if err := os.Remove(srcFile); err != nil {
+			return err
+		}
+		fmt.Printf("%v removed after all dependencies moved to %v\n", srcFile, dstFile)
+	} else {
+		if err := saveDeps(newSrcDeps, srcFile); err != nil {
+			return err
+		}
+		fmt.Printf("New %v saved\n", srcFile)
+	}
+	if err := saveDeps(newDstDeps, dstFile); err != nil {
+		return err
+	}
+	fmt.Printf("New %v saved\n", dstFile)
+
+	return nil
+}
+
+func groupBySource(depsList []*NixDepenency) map[string]*NixDepenency {
+	depsMap := make(map[string]*NixDepenency)
+	for _, dep := range depsList {
+		depsMap[dep.GoPackagePath] = dep
+	}
+	return depsMap
 }
 
 func saveDeps(deps []*NixDepenency, depsFilename string) error {
