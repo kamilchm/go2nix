@@ -3,14 +3,35 @@ with import <nixpkgs> {};
 
 with goPackages;
 
+let
+  vcss = [
+    nix-prefetch-git
+    # nix-prefetch-svn
+    # nix-prefetch-bzr
+    # nix-prefetch-hg
+  ];
+in
 buildGoPackage rec {
   name = "go2nix-${version}";
-  version = "20160308-${stdenv.lib.strings.substring 0 7 rev}";
+  version = "20160421";
   rev = "fd5dacf1a8da65964be801052eada09ca29c8650";
   
   goPackagePath = "github.com/kamilchm/go2nix";
 
+  buildInputs = [ makeWrapper go-bindata.bin tools.bin ];
+ 
   src = ./.;
+ 
+  allowGoReference = true;
+
+  preBuild = ''go generate ./...'';
+  postInstall = ''
+    wrapProgram $bin/bin/go2nix \
+      ${lib.flip lib.concatMapStrings vcss (vcs: ''
+        --prefix PATH : ${vcs}/bin \
+      '')} \
+      --prefix PATH : ${git}/bin
+  '';
 
   extraSrcs = map ( jsonDep:
     {
