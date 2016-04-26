@@ -2,6 +2,16 @@
 
 # go2nix
 
+It's just a PoC and I working on major rework on ``common-libs`` branch. So there's no docs here :/ and I plan to write about usage when I settle with implementation. But it should be usable right now generating derivations with complete dependency set.
+First, you need to setup you Go environment with proper ``GOPATH`` https://github.com/golang/go/wiki/GOPATH.
+Then try to do:
+```
+$ go get -u github.com/btcsuite/btcd/...
+$ cd $GOPATH/src/github.com/btcsuite/btcd
+$ go2nix save
+```
+It should produce complete ``default.nix`` that you can build or include somewhere in nixpkgs.
+
 ### Related Works
 
 * https://github.com/golang/go/blob/master/src/cmd/go/list.go
