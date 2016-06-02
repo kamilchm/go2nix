@@ -51,16 +51,16 @@ func save(pkgName, goPath, nixFile string, depsFile string, testImports bool, bu
 	}
 
 	pkgsSoFar := make(map[string]bool)
-	var depsPkgs []*NixDepenency
+	var depsPkgs []*NixDependency
 	for _, dep := range deps {
 		p, err := NewPackage(dep, goPath)
 		if err != nil {
 			return fmt.Errorf("Can't create package for: %v", dep)
 		}
 		if !pkgsSoFar[p.ImportPath] {
-			depsPkgs = append(depsPkgs, &NixDepenency{
+			depsPkgs = append(depsPkgs, &NixDependency{
 				GoPackagePath: p.ImportPath,
-				Fetch: FetchGit{
+				Fetch: &FetchGit{
 					Type:   "git",
 					Url:    p.VcsRepo,
 					Rev:    p.Revision,

@@ -11,9 +11,11 @@ import (
 	"text/template"
 )
 
-type NixDepenency struct {
-	GoPackagePath string   `json:"goPackagePath"`
-	Fetch         FetchGit `json:"fetch"`
+type NixDependency struct {
+	GoPackagePath string    `json:"goPackagePath,omitempty"`
+	Fetch         *FetchGit `json:"fetch,omitempty"`
+	IncludeFile   string    `json:"include,omitempty"`
+	Packages      []string  `json:"packages,omitempty"`
 }
 
 type FetchGit struct {
@@ -36,25 +38,30 @@ func MergeDeps(srcFile string, dstFile string) error {
 	srcDeps := groupBySource(srcDepsList)
 	dstDeps := groupBySource(dstDepsList)
 
-	var newSrcDeps []*NixDepenency
-	var newDstDeps []*NixDepenency
+	var newSrcDeps []*NixDependency
+	newSrcInclude := NixDependency{IncludeFile: dstFile}
+	newDstDeps := dstDepsList
 
 	for packagePath, srcDep := range srcDeps {
 		if dstDep, exist := dstDeps[packagePath]; exist {
 			if srcDep.Fetch.Rev == dstDep.Fetch.Rev {
 				fmt.Printf("Same version of %v found in both files, removing from %v\n",
 					packagePath, srcFile)
-				newDstDeps = append(newDstDeps, dstDep)
+				newSrcInclude.Packages = append(newSrcInclude.Packages, packagePath)
 			} else {
 				fmt.Printf("Package %v found in both files but in they use different version. You need to agree on its version manually.\n")
 				newSrcDeps = append(newSrcDeps, srcDep)
-				newDstDeps = append(newDstDeps, dstDep)
 			}
 		} else {
 			fmt.Printf("Moving %v from %v to %v\n", packagePath, srcFile, dstFile)
 			dstDeps[packagePath] = srcDep
 			newDstDeps = append(newDstDeps, srcDep)
+			newSrcInclude.Packages = append(newSrcInclude.Packages, packagePath)
 		}
+	}
+
+	if len(newSrcInclude.Packages) > 0 {
+		newSrcDeps = append(newSrcDeps, &newSrcInclude)
 	}
 
 	if len(newSrcDeps) == 0 {
@@ -76,15 +83,15 @@ func MergeDeps(srcFile string, dstFile string) error {
 	return nil
 }
 
-func groupBySource(depsList []*NixDepenency) map[string]*NixDepenency {
-	depsMap := make(map[string]*NixDepenency)
+func groupBySource(depsList []*NixDependency) map[string]*NixDependency {
+	depsMap := make(map[string]*NixDependency)
 	for _, dep := range depsList {
 		depsMap[dep.GoPackagePath] = dep
 	}
 	return depsMap
 }
 
-func saveDeps(deps []*NixDepenency, depsFilename string) error {
+func saveDeps(deps []*NixDependency, depsFilename string) error {
 	depsFile, err := os.Create(depsFilename)
 	if err != nil {
 		return err
@@ -104,12 +111,12 @@ func saveDeps(deps []*NixDepenency, depsFilename string) error {
 	return nil
 }
 
-func loadDeps(depsFilename string) ([]*NixDepenency, error) {
+func loadDeps(depsFilename string) ([]*NixDependency, error) {
 	depsFile, err := ioutil.ReadFile(depsFilename)
 	if err != nil {
 		return nil, err
 	}
-	var deps []*NixDepenency
+	var deps []*NixDependency
 	err = json.Unmarshal(depsFile, &deps)
 	return deps, err
 }
