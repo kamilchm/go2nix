@@ -49,7 +49,7 @@ func MergeDeps(srcFile string, dstFile string) error {
 					packagePath, srcFile)
 				newSrcInclude.Packages = append(newSrcInclude.Packages, packagePath)
 			} else {
-				fmt.Printf("Package %v found in both files but in they use different version. You need to agree on its version manually.\n")
+				fmt.Printf("Package %v found in both files but in they use different version. You need to agree on its version manually.\n", packagePath)
 				newSrcDeps = append(newSrcDeps, srcDep)
 			}
 		} else {
