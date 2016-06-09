@@ -1,15 +1,11 @@
 package main
 
-// go:generate go-bindata .
-
 import (
 	"fmt"
 	"go/build"
-	"os"
 	"path"
 	"sort"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/Masterminds/vcs"
@@ -42,7 +38,7 @@ type VendoredPackage struct {
 	PkgDir     string
 }
 
-func save(pkgName, goPath string, testImports bool, buildTags []string) error {
+func save(pkgName, goPath, nixFile string, depsFile string, testImports bool, buildTags []string) error {
 
 	pkg, err := NewPackage(pkgName, goPath)
 	if err != nil {
@@ -55,49 +51,39 @@ func save(pkgName, goPath string, testImports bool, buildTags []string) error {
 	}
 
 	pkgsSoFar := make(map[string]bool)
-	var depsPkgs []*GoPackage
+	var depsPkgs []*NixDependency
 	for _, dep := range deps {
 		p, err := NewPackage(dep, goPath)
 		if err != nil {
 			return fmt.Errorf("Can't create package for: %v", dep)
 		}
 		if !pkgsSoFar[p.ImportPath] {
-			depsPkgs = append(depsPkgs, p)
+			depsPkgs = append(depsPkgs, &NixDependency{
+				GoPackagePath: p.ImportPath,
+				Fetch: &FetchGit{
+					Type:   "git",
+					Url:    p.VcsRepo,
+					Rev:    p.Revision,
+					Sha256: p.Hash,
+				},
+			})
 			pkgsSoFar[p.ImportPath] = true
 		}
 	}
 
+	if err := saveDeps(depsPkgs, depsFile); err != nil {
+		return err
+	}
+
 	pkgDef := struct {
 		Pkg       *GoPackage
-		Deps      []*GoPackage
 		BuildTags string
-	}{pkg, depsPkgs, strings.Join(buildTags, ",")}
+	}{pkg, strings.Join(buildTags, ",")}
 
-	if err = writeFromTemplate("default.nix", pkgDef); err != nil {
+	if err = writeFromTemplate(nixFile, pkgDef); err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func writeFromTemplate(filename string, data interface{}) error {
-	templateData, err := Asset("templates/" + filename)
-	if err != nil {
-		return err
-	}
-
-	t, err := template.New(filename).Delims("[[", "]]").Parse(string(templateData))
-	if err != nil {
-		return err
-	}
-
-	target, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer target.Close()
-
-	t.Execute(target, data)
 	return nil
 }
 
@@ -150,11 +136,6 @@ func repoRoot(pth string) (string, error) {
 			pth, err)
 	}
 	return pth, nil
-}
-
-func nixName(goImportPath string) string {
-	parts := strings.Split(goImportPath, "/")
-	return strings.Replace(parts[len(parts)-1], ".", "-", -1)
 }
 
 func findDeps(name, gopath string, testImports bool, buildTags []string) ([]string, error) {
