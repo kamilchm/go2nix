@@ -4,8 +4,8 @@
     "fetch": {
       "type": "git",
       "url": "https://github.com/Masterminds/vcs",
-      "rev": "fa85cceafacd29c84a8aa6e68967bb9f1754e5e3",
-      "sha256": "0a96hwrd1j2nbalprq0z0y13kk76xbb7q060qnsmkgq8sg8lhix2"
+      "rev": "7af28b64c5ec41b1558f5514fd938379822c237c",
+      "sha256": "127pamr5lkym3iq6z747bm4y4gyc02glrqb61yv82z1rdyv1dcf6"
     }
   },
   {
