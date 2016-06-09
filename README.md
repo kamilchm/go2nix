@@ -1,22 +1,21 @@
 [![Circle CI](https://circleci.com/gh/kamilchm/go2nix.svg?style=shield)](https://circleci.com/gh/kamilchm/go2nix)
 
-# go2nix
+# go2nix - because Go and Nix are both amazing
 
-It's just a PoC and I working on major rework on ``common-libs`` branch. So there's no docs here :/ and I plan to write about usage when I settle with implementation. But it should be usable right now generating derivations with complete dependency set.
-First, you need to setup you Go environment with proper ``GOPATH`` https://github.com/golang/go/wiki/GOPATH.
-Then try to do:
+## For Nixers - packaging Go applications
+
+`go2nix` provides an autmatic way to create Nix derivations for Go applications.
+
+1. Start with app sources than can be built on your machine with `go build`.
+   It means that you need to get all dependencies into current `GOPATH`.
+2. Run `go2nix save` in application source dir where `main` package lives.
+   This will create 2 files `default.nix` and `deps.json` that can be moved
+   into its own directory under `nixpkgs`.
+3. Run `go2nix merge <new_app_deps.json> <nixpkgs/development/go-modules/libs.json>
+   to merge app dependecies into common go libs from `nixpkgs`.
+
+## For Gophers - reproducible development and build environments
+
 ```
-$ go get -u github.com/btcsuite/btcd/...
-$ cd $GOPATH/src/github.com/btcsuite/btcd
-$ go2nix save
+stay tuned
 ```
-It should produce complete ``default.nix`` that you can build or include somewhere in nixpkgs.
-
-### Related Works
-
-* https://github.com/golang/go/blob/master/src/cmd/go/list.go
-* https://github.com/cespare/deplist
-* https://github.com/golang/tools/blob/9d2ff756b797a862da0686e2e41e09cd87da017b/go/types/package.go#L57
-* https://github.com/golang/tools/blob/ba766134cc38dea5ed957cf2b40266a8e0aa5660/go/buildutil/allpackages.go#L52
-* https://github.com/NixOS/nixpkgs/pull/12010
-* go2nix save --exclude example
