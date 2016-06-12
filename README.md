@@ -11,7 +11,7 @@
 2. Run `go2nix save` in application source dir where `main` package lives.
    This will create 2 files `default.nix` and `deps.json` that can be moved
    into its own directory under `nixpkgs`.
-3. Run `go2nix merge <new_app_deps.json> <nixpkgs/development/go-modules/libs.json>
+3. Run `go2nix merge <new_app_deps.json> <nixpkgs/development/go-modules/libs.json>`
    to merge app dependecies into common go libs from `nixpkgs`.
 
 ## For Gophers - reproducible development and build environments
