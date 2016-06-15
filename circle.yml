@@ -7,6 +7,9 @@ dependencies:
     - sudo chown ubuntu /nix
     - curl https://nixos.org/nix/install | sh
     - echo "source ~/.nix-profile/etc/profile.d/nix.sh" >> ~/.circlerc
+    - nix-channel --add https://nixos.org/channels/nixos-unstable nixpkgs
+    - nix-channel --update
+    - nix-env -u
     - mkdir -p ~/nix_out
 
 test:
