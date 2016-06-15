@@ -8,7 +8,7 @@ buildGoPackage rec {
 
   [[ if ne .BuildTags "" ]]
   buildFlags = "--tags [[ .BuildTags ]]";
-  [[ end -]]
+  [[ end ]]
   goPackagePath = "[[ .Pkg.ImportPath ]]";
 
   src = fetchgit {
