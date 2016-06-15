@@ -1,13 +1,17 @@
-with import <nixpkgs> {};
+with import <nixpkgs>{};
 
 buildGoPackage rec {
-  name = "go2nix-${version}";
-  version = "20160603-${stdenv.lib.strings.substring 0 7 rev}";
-  rev = "ca903924339f654fda93c07f02dc56d8df3c87c3";
+  name = "go2nix-dev";
 
   goPackagePath = "github.com/kamilchm/go2nix";
 
   src = ./.;
+
+  buildInputs = [ go-bindata.bin ];
+
+  preBuild = ''
+    go generate ./...
+  '';
 
   goDeps = ./deps.json;
 }
