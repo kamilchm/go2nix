@@ -1,16 +1,16 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"os/exec"
-	"encoding/json"
 	"strings"
 )
 
 type Package struct {
-    Url string `json:"url"`
-    Rev string `json:"rev"`
-    Sha256 string `json:"sha256"`
+	Url    string `json:"url"`
+	Rev    string `json:"rev"`
+	Sha256 string `json:"sha256"`
 }
 
 func calculateHash(url, pathType string) (hash string) {
@@ -25,7 +25,7 @@ func calculateHash(url, pathType string) (hash string) {
 	prefetchCmd := exec.Command("nix-prefetch-"+pathType, args...)
 	prefetchOut, err := prefetchCmd.Output()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Command %v %v failed: %v", prefetchCmd.Path, prefetchCmd.Args, err)
 	}
 	return hashFromNixPrefetch(pathType, prefetchOut)
 }
@@ -45,5 +45,5 @@ func hashFromNixPrefetch(pathType string, prefetchOut []byte) string {
 	}
 
 	// regular nix-prefetch-* output
-	return prefetchLines[len(prefetchLines)-1];
+	return prefetchLines[len(prefetchLines)-1]
 }
