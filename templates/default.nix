@@ -17,5 +17,5 @@ buildGoPackage rec {
     sha256 = "[[ .Pkg.Hash ]]";
   };
 
-  goDeps = ./deps.json;
+  goDeps = import ./deps.nix { inherit fetchgit fetchhg fetchbzr fetchsvn; };
 }

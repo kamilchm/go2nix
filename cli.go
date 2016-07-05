@@ -19,7 +19,7 @@ func main() {
 	go2nix.Command("save", "Saves dependecies for cwd within GOPATH", func(cmd *cli.Cmd) {
 		outputFile := cmd.StringOpt("o output", "default.nix",
 			"Write the resulting nix file to the named output file")
-		depsFile := cmd.StringOpt("d deps-file", "deps.json",
+		depsFile := cmd.StringOpt("d deps-file", "deps.nix",
 			"Write the resulting dependencies file to the named output file")
 		testImports := cmd.BoolOpt("t test-imports", false,
 			"Include test imports.")

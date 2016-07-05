@@ -13,5 +13,5 @@ buildGoPackage rec {
     go generate ./...
   '';
 
-  goDeps = ./deps.json;
+  goDeps = import ./deps.nix { inherit (pkgs) fetchgit fetchhg fetchbzr fetchsvn; };
 }

@@ -33,7 +33,6 @@ type GoPackage struct {
 }
 
 type VendoredPackage struct {
-	Name       string
 	ImportPath string
 	PkgDir     string
 }
@@ -72,7 +71,7 @@ func save(pkgName, goPath, nixFile string, depsFile string, testImports bool, bu
 	}
 
 	if err := saveDeps(depsPkgs, depsFile); err != nil {
-		return err
+		return fmt.Errorf("Error while saving %v: %v", depsFile, err)
 	}
 
 	pkgDef := struct {
@@ -80,8 +79,8 @@ func save(pkgName, goPath, nixFile string, depsFile string, testImports bool, bu
 		BuildTags string
 	}{pkg, strings.Join(buildTags, ",")}
 
-	if err = writeFromTemplate(nixFile, pkgDef); err != nil {
-		return err
+	if err = writeFromTemplate(nixFile, "default.nix", pkgDef); err != nil {
+		return fmt.Errorf("Error while writing %v: %v", nixFile, err)
 	}
 
 	return nil
