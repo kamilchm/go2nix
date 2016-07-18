@@ -65,10 +65,12 @@ func currentPackage(goPath string) (string, error) {
 		return "", err
 	}
 
-	if !strings.HasPrefix(currDir, goPath+"/src/") {
-		return "", fmt.Errorf("Current dir %v is outside of GOPATH(%v). "+
-			"Can't get current package name", currDir, goPath)
+	for _, goPathDir := range strings.Split(goPath, ":") {
+		if strings.HasPrefix(currDir, goPathDir+"/src/") {
+			return strings.TrimPrefix(currDir, goPathDir+"/src/"), nil
+		}
 	}
 
-	return strings.TrimPrefix(currDir, goPath+"/src/"), nil
+	return "", fmt.Errorf("Current dir %v is outside of GOPATH(%v). "+
+		"Can't get current package name", currDir, goPath)
 }

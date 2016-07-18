@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"go/build"
+	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -87,7 +89,10 @@ func save(pkgName, goPath, nixFile string, depsFile string, testImports bool, bu
 }
 
 func NewPackage(importPath string, goPath string) (*GoPackage, error) {
-	fullPath := goPath + "/src/" + importPath
+	fullPath, err := goPackageDir(importPath, goPath)
+	if err != nil {
+		return nil, err
+	}
 
 	repoRoot, err := repoRoot(fullPath)
 	if err != nil {
@@ -120,6 +125,18 @@ func NewPackage(importPath string, goPath string) (*GoPackage, error) {
 		Hash:       calculateHash("file://"+repo.LocalPath(), string(repo.Vcs())),
 		UpdateDate: updateDate,
 	}, nil
+}
+
+func goPackageDir(importPath, goPath string) (string, error) {
+	for _, goPathDir := range strings.Split(goPath, ":") {
+		expectedPath := filepath.Clean(goPathDir + "/src/" + importPath)
+		if _, err := os.Stat(expectedPath); err == nil {
+			return expectedPath, nil
+		}
+	}
+
+	return "", fmt.Errorf("Cannot find package %v dir in GOPATH: %v",
+		importPath, goPath)
 }
 
 func repoRoot(pth string) (string, error) {
