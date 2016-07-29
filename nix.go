@@ -92,23 +92,7 @@ func groupBySource(depsList []*NixDependency) map[string]*NixDependency {
 }
 
 func saveDeps(deps []*NixDependency, depsFilename string) error {
-	depsFile, err := os.Create(depsFilename)
-	if err != nil {
-		return err
-	}
-	defer depsFile.Close()
-
-	j, jerr := json.MarshalIndent(deps, "", "  ")
-	if jerr != nil {
-		fmt.Println("jerr:", jerr.Error())
-	}
-
-	_, werr := depsFile.Write(j)
-	if werr != nil {
-		fmt.Println("werr:", werr.Error())
-	}
-
-	return nil
+	return writeFromTemplate(depsFilename, "deps.nix", deps)
 }
 
 func loadDeps(depsFilename string) ([]*NixDependency, error) {
@@ -121,8 +105,8 @@ func loadDeps(depsFilename string) ([]*NixDependency, error) {
 	return deps, err
 }
 
-func writeFromTemplate(filename string, data interface{}) error {
-	templateData, err := Asset("templates/default.nix")
+func writeFromTemplate(filename, templFile string, data interface{}) error {
+	templateData, err := Asset("templates/" + templFile)
 	if err != nil {
 		return err
 	}

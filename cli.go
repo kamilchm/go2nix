@@ -19,7 +19,7 @@ func main() {
 	go2nix.Command("save", "Saves dependecies for cwd within GOPATH", func(cmd *cli.Cmd) {
 		outputFile := cmd.StringOpt("o output", "default.nix",
 			"Write the resulting nix file to the named output file")
-		depsFile := cmd.StringOpt("d deps-file", "deps.json",
+		depsFile := cmd.StringOpt("d deps-file", "deps.nix",
 			"Write the resulting dependencies file to the named output file")
 		testImports := cmd.BoolOpt("t test-imports", false,
 			"Include test imports.")
@@ -65,10 +65,12 @@ func currentPackage(goPath string) (string, error) {
 		return "", err
 	}
 
-	if !strings.HasPrefix(currDir, goPath+"/src/") {
-		return "", fmt.Errorf("Current dir %v is outside of GOPATH(%v). "+
-			"Can't get current package name", currDir, goPath)
+	for _, goPathDir := range strings.Split(goPath, ":") {
+		if strings.HasPrefix(currDir, goPathDir+"/src/") {
+			return strings.TrimPrefix(currDir, goPathDir+"/src/"), nil
+		}
 	}
 
-	return strings.TrimPrefix(currDir, goPath+"/src/"), nil
+	return "", fmt.Errorf("Current dir %v is outside of GOPATH(%v). "+
+		"Can't get current package name", currDir, goPath)
 }

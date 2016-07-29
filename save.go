@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"go/build"
+	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -33,7 +35,6 @@ type GoPackage struct {
 }
 
 type VendoredPackage struct {
-	Name       string
 	ImportPath string
 	PkgDir     string
 }
@@ -72,7 +73,7 @@ func save(pkgName, goPath, nixFile string, depsFile string, testImports bool, bu
 	}
 
 	if err := saveDeps(depsPkgs, depsFile); err != nil {
-		return err
+		return fmt.Errorf("Error while saving %v: %v", depsFile, err)
 	}
 
 	pkgDef := struct {
@@ -80,15 +81,18 @@ func save(pkgName, goPath, nixFile string, depsFile string, testImports bool, bu
 		BuildTags string
 	}{pkg, strings.Join(buildTags, ",")}
 
-	if err = writeFromTemplate(nixFile, pkgDef); err != nil {
-		return err
+	if err = writeFromTemplate(nixFile, "default.nix", pkgDef); err != nil {
+		return fmt.Errorf("Error while writing %v: %v", nixFile, err)
 	}
 
 	return nil
 }
 
 func NewPackage(importPath string, goPath string) (*GoPackage, error) {
-	fullPath := goPath + "/src/" + importPath
+	fullPath, err := goPackageDir(importPath, goPath)
+	if err != nil {
+		return nil, err
+	}
 
 	repoRoot, err := repoRoot(fullPath)
 	if err != nil {
@@ -121,6 +125,18 @@ func NewPackage(importPath string, goPath string) (*GoPackage, error) {
 		Hash:       calculateHash("file://"+repo.LocalPath(), string(repo.Vcs())),
 		UpdateDate: updateDate,
 	}, nil
+}
+
+func goPackageDir(importPath, goPath string) (string, error) {
+	for _, goPathDir := range strings.Split(goPath, ":") {
+		expectedPath := filepath.Clean(goPathDir + "/src/" + importPath)
+		if _, err := os.Stat(expectedPath); err == nil {
+			return expectedPath, nil
+		}
+	}
+
+	return "", fmt.Errorf("Cannot find package %v dir in GOPATH: %v",
+		importPath, goPath)
 }
 
 func repoRoot(pth string) (string, error) {

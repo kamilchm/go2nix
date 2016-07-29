@@ -12,7 +12,7 @@ Commit date is 2015-09-16 13:57:42 -0700
 3f8e0f809c43744023db06ce47a271dd521db5441c5a11a0551b86b077158035
 `)
 		Convey("When we parse it", func() {
-			hash := hashFromNixPrefetch(prefetchOut)
+			hash := hashFromNixPrefetch("notgit", prefetchOut)
 
 			Convey("Then we should have extracted nix-hash", func() {
 				So(hash, ShouldEqual,
