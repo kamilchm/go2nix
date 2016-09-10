@@ -8,7 +8,8 @@ let
   dep2nix = goDep: with goDep; ''
     {
       goPackagePath = "${goPackagePath}";
-      src = fetch${fetch.type} {
+      fetch = {
+        type = ${fetch.type};
         url = "${fetch.url}";
         rev = "${fetch.rev}";
         sha256 = "${fetch.sha256}";
@@ -22,7 +23,7 @@ let
     external = filter (d: d ? include) deps;
     direct = filter (d: d ? goPackagePath && (length filterPackages == 0 || elem d.goPackagePath filterPackages)) deps;
   in
-    foldl' (p: n: p + n) "{ fetchgit, fetchhg, fetchbzr, fetchsvn }:\n[\n"
+    foldl' (p: n: p + n) "[\n"
     ((map importGodeps (map (d: { depsFile = <nixpkgs> + "/pkgs/development/go-modules/generic/" + d.include; filterPackages = d.packages; }) external)) ++ (map dep2nix direct)) + "]\n";
 
   depsNix = toFile "deps.nix" (importGodeps { depsFile = toPath depsJson; });

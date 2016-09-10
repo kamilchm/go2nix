@@ -17,7 +17,7 @@ buildGoPackage rec {
     sha256 = "[[ .Pkg.Hash ]]";
   };
 
-  goDeps = import ./deps.nix { inherit fetchgit fetchhg fetchbzr fetchsvn; };
+  goDeps = ./deps.nix;
 
   # TODO: add metadata https://nixos.org/nixpkgs/manual/#sec-standard-meta-attributes
   meta = {
