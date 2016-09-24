@@ -58,6 +58,9 @@ func save(pkgName, goPath, nixFile string, depsFile string, testImports bool, bu
 		if err != nil {
 			return fmt.Errorf("Can't create package for: %v", dep)
 		}
+		if p == nil || p.VcsRepo == pkg.VcsRepo {
+			continue
+		}
 		if !pkgsSoFar[p.ImportPath] {
 			depsPkgs = append(depsPkgs, &NixDependency{
 				GoPackagePath: p.ImportPath,
@@ -101,6 +104,10 @@ func NewPackage(importPath string, goPath string) (*GoPackage, error) {
 	}
 
 	pkgRoot := strings.TrimPrefix(repoRoot, goPath+"/src/")
+
+	if strings.Contains(pkgRoot, "/vendor/") {
+		return nil, nil
+	}
 
 	repo, err := vcs.NewRepo("", repoRoot)
 	if err != nil {
@@ -194,16 +201,31 @@ func (c *context) find(name string, testImports bool) error {
 	if name != "." {
 		c.soFar[pkg.ImportPath] = true
 	}
+
+	if strings.Contains(c.dir, "/vendor") {
+		return nil
+	}
+
 	imports := pkg.Imports
 	if testImports {
 		imports = append(imports, pkg.TestImports...)
 	}
+
 	for _, imp := range imports {
 		if !c.soFar[imp] {
+			topDir := c.dir
+
+			repoRoot, _ := repoRoot(c.ctx.GOPATH + "/src/" + imp)
+			if f, err := os.Stat(repoRoot + "/vendor"); err == nil && f.IsDir() {
+				c.dir = repoRoot + "/vendor"
+			}
+
 			if err := c.find(imp, testImports); err != nil {
 				return err
 			}
+			c.dir = topDir
 		}
 	}
+
 	return nil
 }
