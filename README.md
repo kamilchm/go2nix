@@ -17,3 +17,9 @@
 ```
 stay tuned
 ```
+
+# Installation
+
+The preferred way of installing `go2nix` is to use `nix` like `nix-env -i go2nix` or using it declaratively.
+
+But you can also use `go get github.com/kamilchm/go2nix`.
