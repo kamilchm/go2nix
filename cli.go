@@ -15,6 +15,7 @@ import (
 // go2nix entry-point
 func main() {
 	go2nix := cli.App("go2nix", "Nix derivations for Go packages")
+	go2nix.Version("v version", "go2nix "+version)
 
 	go2nix.Command("save", "Saves dependecies for cwd within GOPATH", func(cmd *cli.Cmd) {
 		outputFile := cmd.StringOpt("o output", "default.nix",
