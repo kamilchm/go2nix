@@ -1,0 +1,44 @@
+.TH GO2NIX 1 2016-10-02 GNU "User Commands"
+.SH NAME
+go2nix \- Nix derivations for Go packages
+.SH SYNOPSIS
+.B "go2nix"
+<command>
+.BI "[ " options " ] [ " arguments " ]"
+.SH DESCRIPTION
+.B go2nix
+is a tool to extract dependency information from a Go package in an
+automated way.
+.SH COMMAND MERGE
+.B Synopsis
+.IP
+.B go2nix merge \ \fIsource\fP \ \fIdestination\fP
+.P
+.B Description
+.IP "The merge command takes deps from one file and tries to merge it into another one."
+.SH COMMAND SAVE
+.B Synopsis
+.IP
+.B go2nix save
+[-o | --output=\fIpath\fP]
+[-d | --deps-file=\fIpath\fP]
+[-t | --test-imports]
+[--tags=\fItags\fP]
+.P
+.B Description
+.IP "The save command saves dependencies for the current working directory within GOPATH."
+.P
+.B Options
+.IP "-o, --output=default.nix"
+Write the resulting nix file to the named output file.
+.IP "-d, --deps-file=deps.nix"
+Write the resulting dependencies file to the named output file.
+.IP "-t, --test-imports=false"
+Include test imports.
+.IP "--tags="
+The dependencies will be generated with the specified build tags.
+.SH BUGS
+The list of known bugs is available at <https://github.com/kamilchm/go2nix/issues>.
+This is also where you can report bugs you find while using the program.
+.SH AUTHOR
+Kamil Chmielewski (kamil.chm@gmail.com)
