@@ -65,10 +65,12 @@ func save(pkgName, goPath, nixFile string, depsFile string, testImports bool, bu
 			depsPkgs = append(depsPkgs, &NixDependency{
 				GoPackagePath: p.ImportPath,
 				Fetch: &FetchGit{
-					Type:   "git",
-					Url:    p.VcsRepo,
-					Rev:    p.Revision,
-					Sha256: p.Hash,
+					Fetch: Fetch{
+						Type:   "git",
+						Rev:    p.Revision,
+						Sha256: p.Hash,
+					},
+					Url: p.VcsRepo,
 				},
 			})
 			pkgsSoFar[p.ImportPath] = true

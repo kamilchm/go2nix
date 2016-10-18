@@ -15,11 +15,18 @@ type NixDependency struct {
 	Packages      []string  `json:"packages,omitempty"`
 }
 
+type Fetch struct {
+	Type, Rev, Sha256 string
+}
+
 type FetchGit struct {
-	Type   string `json:"type"`
-	Url    string `json:"url"`
-	Rev    string `json:"rev"`
-	Sha256 string `json:"sha256"`
+	Fetch
+	Url string
+}
+
+type FetchGitHub struct {
+	Fetch
+	Owner, Repo string
 }
 
 func saveDeps(deps []*NixDependency, depsFilename string) error {
