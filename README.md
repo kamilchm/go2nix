@@ -301,6 +301,20 @@ Our project will be called `influxdb-demo` and this demo will be using the [infl
 
     **Note:** You can also arrange a `default.nix` so that it can be used by `nixpkgs` and `nix-shell` but this is not covered here.
 
+
+### Example Leaps
+
+Some projects are built using `go get github.com/jeffail/leaps/cmd/...` and for these you need to identify the `src` directory to run `go2nix save` from. So here is another example:
+
+1. nix-shell -p go2nix git go
+2. cd `mktemp -d`
+3. export GOPATH=`pwd`
+4. go get github.com/jeffail/leaps/cmd/...
+5. cd src/github.com/jeffail/leaps/cmd/leaps
+6. go2nix save
+
+**Note:** The resulting `default.nix` and `deps.nix` are created in the directory you are currently in.
+
 ## For Gophers - reproducible development and build environments
 
 ```
