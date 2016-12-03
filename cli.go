@@ -17,15 +17,15 @@ func main() {
 	go2nix := cli.App("go2nix", "Nix derivations for Go packages")
 	go2nix.Version("v version", "go2nix "+version)
 
-	go2nix.Command("save", "Saves dependecies for cwd within GOPATH", func(cmd *cli.Cmd) {
+	go2nix.Command("save", "Saves dependencies for cwd within GOPATH", func(cmd *cli.Cmd) {
 		outputFile := cmd.StringOpt("o output", "default.nix",
 			"Write the resulting nix file to the named output file")
 		depsFile := cmd.StringOpt("d deps-file", "deps.nix",
 			"Write the resulting dependencies file to the named output file")
 		testImports := cmd.BoolOpt("t test-imports", false,
-			"Include test imports.")
+			"Include test imports")
 		buildTags := cmd.StringOpt("tags", "",
-			"the dependencies will be generated with the specified build tags")
+			"The dependencies will be generated with the specified build tags")
 
 		cmd.Action = func() {
 			goPath := os.Getenv("GOPATH")

@@ -3,4 +3,4 @@
 ### Fixed
 
 - #21 exclude vedored git submodules from deps.nix
-- #24 discover packages from vendor dirs of dependecies
+- #24 discover packages from vendor dirs of dependencies
