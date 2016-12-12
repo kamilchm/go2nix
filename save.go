@@ -82,7 +82,8 @@ func save(pkgName, goPath, nixFile string, depsFile string, testImports bool, bu
 	pkgDef := struct {
 		Pkg       *GoPackage
 		BuildTags string
-	}{pkg, strings.Join(buildTags, ",")}
+		Version   string
+	}{pkg, strings.Join(buildTags, ","), version}
 
 	if err = writeFromTemplate(nixFile, "default.nix", pkgDef); err != nil {
 		return fmt.Errorf("Error while writing %v: %v", nixFile, err)

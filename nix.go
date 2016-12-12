@@ -23,7 +23,10 @@ type FetchGit struct {
 }
 
 func saveDeps(deps []*NixDependency, depsFilename string) error {
-	return writeFromTemplate(depsFilename, "deps.nix", deps)
+	return writeFromTemplate(depsFilename, "deps.nix", struct {
+		Deps    []*NixDependency
+		Version string
+	}{deps, version})
 }
 
 func writeFromTemplate(filename, templFile string, data interface{}) error {
