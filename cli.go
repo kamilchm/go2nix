@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/jawher/mow.cli"
@@ -54,8 +55,12 @@ func currentPackage(goPath string) (string, error) {
 	}
 
 	for _, goPathDir := range strings.Split(goPath, ":") {
-		if strings.HasPrefix(currDir, goPathDir+"/src/") {
-			return strings.TrimPrefix(currDir, goPathDir+"/src/"), nil
+		goPathSrc, err := filepath.Abs(filepath.Join(goPathDir, "/src"))
+		if err != nil {
+			continue
+		}
+		if strings.HasPrefix(currDir, goPathSrc) {
+			return strings.TrimPrefix(currDir, goPathSrc+"/"), nil
 		}
 	}
 
