@@ -4,6 +4,10 @@
 
 - #35 Add go2nix version info in generated nix files
 
+### Changed
+
+- #45 Use unstable in names - nixpkgs conventions
+
 ### Fixed
 
 - #37 Use absolute paths for searching in GOPATH
