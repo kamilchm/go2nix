@@ -2,8 +2,8 @@
 { stdenv, buildGoPackage, fetchgit, fetchhg, fetchbzr, fetchsvn }:
 
 buildGoPackage rec {
-  name = "[[ .Pkg.Name ]]-${version}";
-  version = "[[ .Pkg.UpdateDate.Format "20060102" ]]-${stdenv.lib.strings.substring 0 7 rev}";
+  name = "[[ .Pkg.Name ]]-unstable-${version}";
+  version = "[[ .Pkg.UpdateDate.Format "2006-01-02" ]]";
   rev = "[[ .Pkg.Revision ]]";
 
   [[ if ne .BuildTags "" ]]
