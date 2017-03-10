@@ -3,229 +3,80 @@ package main
 import (
 	"fmt"
 	"go/build"
+	"io/ioutil"
+	"log"
 	"os"
-	"path"
 	"path/filepath"
-	"sort"
 	"strings"
-	"time"
 
-	"github.com/Masterminds/vcs"
+	"github.com/Masterminds/semver"
+	"github.com/sdboyer/gps"
 )
 
-var (
-	excludePath = "example"
-)
+type NaiveAnalyzer struct{}
 
-type context struct {
-	soFar map[string]bool
-	ctx   build.Context
-	dir   string
+// DeriveManifestAndLock is called when the solver needs manifest/lock data
+// for a particular dependency project (identified by the gps.ProjectRoot
+// parameter) at a particular version. That version will be checked out in a
+// directory rooted at path.
+func (a NaiveAnalyzer) DeriveManifestAndLock(path string, n gps.ProjectRoot) (gps.Manifest, gps.Lock, error) {
+	return nil, nil, nil
 }
 
-type GoPackage struct {
-	Name       string
-	ImportPath string
-	VcsRepo    string
-	VcsCommand string
-	Revision   string
-	Hash       string
-	UpdateDate time.Time
-	Vendored   []*VendoredPackage
-}
-
-type VendoredPackage struct {
-	ImportPath string
-	PkgDir     string
+// Reports the name and version of the analyzer. This is used internally as part
+// of gps' hashing memoization scheme.
+func (a NaiveAnalyzer) Info() (string, *semver.Version) {
+	v, _ := semver.NewVersion(version)
+	return "go2nix", v
 }
 
 func save(pkgName, goPath, nixFile string, depsFile string, testImports bool, buildTags []string) error {
+	// Assume the current directory is correctly placed on a GOPATH, and that it's the
+	// root of the project.
+	root, _ := os.Getwd()
+	srcprefix := filepath.Join(build.Default.GOPATH, "src") + string(filepath.Separator)
+	importroot := filepath.ToSlash(strings.TrimPrefix(root, srcprefix))
 
-	pkg, err := NewPackage(pkgName, goPath)
+	// Set up params, including tracing
+	params := gps.SolveParameters{
+		RootDir:     root,
+		Trace:       true,
+		TraceLogger: log.New(os.Stdout, "go2nix: ", 0),
+	}
+	// Perform static analysis on the current project to find all of its imports.
+	params.RootPackageTree, _ = gps.ListPackages(root, importroot)
+
+	// Set up a SourceManager. This manages interaction with sources (repositories).
+	tempdir, _ := ioutil.TempDir("", "go2nix-cache")
+	sourcemgr, _ := gps.NewSourceManager(NaiveAnalyzer{}, filepath.Join(tempdir))
+	defer sourcemgr.Release()
+
+	// Prep and run the solver
+	solver, _ := gps.Prepare(params, sourcemgr)
+	solution, err := solver.Solve()
 	if err != nil {
-		return err
+		return fmt.Errorf("Couldn't solve package dependencies: %v", err)
 	}
 
-	deps, err := findDeps(pkgName, goPath, testImports, buildTags)
-	if err != nil {
-		return err
-	}
-
-	pkgsSoFar := make(map[string]bool)
-	var depsPkgs []*NixDependency
-	for _, dep := range deps {
-		p, err := NewPackage(dep, goPath)
-		if err != nil {
-			return fmt.Errorf("Can't create package for: %v", dep)
-		}
-		if p == nil || p.VcsRepo == pkg.VcsRepo {
-			continue
-		}
-		if !pkgsSoFar[p.ImportPath] {
-			depsPkgs = append(depsPkgs, &NixDependency{
-				GoPackagePath: p.ImportPath,
-				Fetch: &FetchGit{
-					Type:   "git",
-					Url:    p.VcsRepo,
-					Rev:    p.Revision,
-					Sha256: p.Hash,
-				},
-			})
-			pkgsSoFar[p.ImportPath] = true
+	nixDeps := make([]NixDependency, len(solution.Projects()))
+	for i, p := range solution.Projects() {
+		nixDeps[i] = NixDependency{
+			GoPackagePath: string(p.Ident().ProjectRoot),
+			Fetch: &FetchGit{
+				Type:   "git",
+				Url:    p.Ident().Source,
+				Rev:    p.Version().String(),
+				Sha256: "xxxxxxxxxx",
+			},
 		}
 	}
 
-	if err := saveDeps(depsPkgs, depsFile); err != nil {
+	if err := saveDeps(nixDeps, depsFile); err != nil {
 		return fmt.Errorf("Error while saving %v: %v", depsFile, err)
 	}
 
-	pkgDef := struct {
-		Pkg       *GoPackage
-		BuildTags string
-		Version   string
-	}{pkg, strings.Join(buildTags, ","), version}
-
-	if err = writeFromTemplate(nixFile, "default.nix", pkgDef); err != nil {
+	if err = writeFromTemplate(nixFile, "default.nix", nixDeps[0]); err != nil {
 		return fmt.Errorf("Error while writing %v: %v", nixFile, err)
-	}
-
-	return nil
-}
-
-func NewPackage(importPath string, goPath string) (*GoPackage, error) {
-	fullPath, err := goPackageDir(importPath, goPath)
-	if err != nil {
-		return nil, err
-	}
-
-	repoRoot, err := repoRoot(fullPath)
-	if err != nil {
-		return nil, fmt.Errorf("Cannot find repo root for %v: %v",
-			fullPath, err)
-	}
-
-	pkgRoot := strings.TrimPrefix(repoRoot, goPath+"/src/")
-
-	if strings.Contains(pkgRoot, "/vendor/") {
-		return nil, nil
-	}
-
-	repo, err := vcs.NewRepo("", repoRoot)
-	if err != nil {
-		return nil, fmt.Errorf("Error while creating repo for %v: %v",
-			repoRoot, err)
-	}
-	revision, err := repo.Version()
-	if err != nil {
-		return nil, err
-	}
-	updateDate, err := repo.Date()
-	if err != nil {
-		return nil, err
-	}
-
-	return &GoPackage{
-		Name:       nixName(pkgRoot),
-		ImportPath: pkgRoot,
-		VcsRepo:    repo.Remote(),
-		VcsCommand: string(repo.Vcs()),
-		Revision:   revision,
-		Hash:       calculateHash("file://"+repo.LocalPath(), string(repo.Vcs())),
-		UpdateDate: updateDate,
-	}, nil
-}
-
-func goPackageDir(importPath, goPath string) (string, error) {
-	for _, goPathDir := range strings.Split(goPath, ":") {
-		expectedPath := filepath.Clean(goPathDir + "/src/" + importPath)
-		if _, err := os.Stat(expectedPath); err == nil {
-			return expectedPath, nil
-		}
-	}
-
-	return "", fmt.Errorf("Cannot find package %v dir in GOPATH: %v",
-		importPath, goPath)
-}
-
-func repoRoot(pth string) (string, error) {
-	_, err := vcs.DetectVcsFromFS(pth)
-	if err == vcs.ErrCannotDetectVCS {
-		if pth == "/" {
-			return pth, err
-		}
-		return repoRoot(path.Dir(pth))
-	}
-	if err != nil {
-		return pth, fmt.Errorf("Error while detecting repo root for %v: %v",
-			pth, err)
-	}
-	return pth, nil
-}
-
-func findDeps(name, gopath string, testImports bool, buildTags []string) ([]string, error) {
-	ctx := build.Default
-	ctx.BuildTags = buildTags
-
-	if gopath != "" {
-		ctx.GOPATH = gopath
-	}
-	c := &context{
-		soFar: make(map[string]bool),
-		ctx:   ctx,
-		dir:   gopath + "/src/" + name,
-	}
-	if err := c.find(name, testImports); err != nil {
-		return nil, err
-	}
-	var deps []string
-	for p := range c.soFar {
-		if p != name {
-			deps = append(deps, p)
-		}
-	}
-	sort.Strings(deps)
-	return deps, nil
-}
-
-func (c *context) find(name string, testImports bool) error {
-	if name == "C" {
-		return nil
-	}
-	pkg, err := c.ctx.Import(name, c.dir, 0)
-	if err != nil {
-		return err
-	}
-	if pkg.Goroot {
-		return nil
-	}
-
-	if name != "." {
-		c.soFar[pkg.ImportPath] = true
-	}
-
-	if strings.Contains(c.dir, "/vendor") {
-		return nil
-	}
-
-	imports := pkg.Imports
-	if testImports {
-		imports = append(imports, pkg.TestImports...)
-	}
-
-	for _, imp := range imports {
-		if !c.soFar[imp] {
-			topDir := c.dir
-
-			repoRoot, _ := repoRoot(c.ctx.GOPATH + "/src/" + imp)
-			if f, err := os.Stat(repoRoot + "/vendor"); err == nil && f.IsDir() {
-				c.dir = repoRoot + "/vendor"
-			}
-
-			if err := c.find(imp, testImports); err != nil {
-				return err
-			}
-			c.dir = topDir
-		}
 	}
 
 	return nil

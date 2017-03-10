@@ -22,9 +22,9 @@ type FetchGit struct {
 	Sha256 string `json:"sha256"`
 }
 
-func saveDeps(deps []*NixDependency, depsFilename string) error {
+func saveDeps(deps []NixDependency, depsFilename string) error {
 	return writeFromTemplate(depsFilename, "deps.nix", struct {
-		Deps    []*NixDependency
+		Deps    []NixDependency
 		Version string
 	}{deps, version})
 }
