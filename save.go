@@ -202,8 +202,7 @@ func (c *context) find(name string, testImports bool) error {
 	if name != "." {
 		c.soFar[pkg.ImportPath] = true
 	}
-
-	if strings.Contains(c.dir, "/vendor") {
+	if strings.Contains(c.dir, "/vendor") && !strings.HasSuffix(c.dir, "/vendor") {
 		return nil
 	}
 
