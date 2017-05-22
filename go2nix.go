@@ -18,7 +18,7 @@ type NixPackage struct {
 }
 
 type DepSolver interface {
-	Dependencies(GoPackage) ([]GoPackage, error)
+	Dependencies(GoPackage, string) ([]GoPackage, error)
 }
 
 type PackageLoader interface {

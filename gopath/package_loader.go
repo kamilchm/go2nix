@@ -12,7 +12,7 @@ import (
 type PackageLoader struct{}
 
 func (l *PackageLoader) Package(dir string) (go2nix.GoPackage, error) {
-	goPath := os.Getenv("GOPATH")
+	goPath := GoPath()
 	if goPath == "" {
 		return go2nix.GoPackage{}, fmt.Errorf("No GOPATH set, couldn't discover Go package")
 	}
@@ -31,4 +31,8 @@ func (l *PackageLoader) Package(dir string) (go2nix.GoPackage, error) {
 
 	return go2nix.GoPackage{}, fmt.Errorf("Current dir %v is outside of GOPATH(%v). "+
 		"Couldn't get current package name", dir, goPath)
+}
+
+func GoPath() string {
+	return os.Getenv("GOPATH")
 }

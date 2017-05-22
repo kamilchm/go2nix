@@ -24,7 +24,7 @@ func main() {
 		log.Fatalf("Couldn't load Go package: %v", err)
 	}
 
-	deps, err := solver.Dependencies(goPkg)
+	deps, err := solver.Dependencies(goPkg, gopath.GoPath())
 	if err != nil {
 		log.Fatalf("Couldn't solve package dependencies: %v", err)
 	}
