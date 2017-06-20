@@ -8,11 +8,17 @@ import (
 	"github.com/kamilchm/go2nix"
 	"github.com/kamilchm/go2nix/dep"
 	"github.com/kamilchm/go2nix/gopath"
+	"github.com/kamilchm/go2nix/govcs"
+	"github.com/kamilchm/go2nix/nixhash"
 )
 
 func main() {
 	loader := go2nix.PackageLoader(&gopath.PackageLoader{})
 	solver := go2nix.DepSolver(&dep.Solver{})
+	sourceSolvers := []go2nix.SourceSolver{
+		&govcs.SourceSolver{},
+		&nixhash.SourceSolver{},
+	}
 
 	currDir, err := os.Getwd()
 	if err != nil {
@@ -27,6 +33,17 @@ func main() {
 	deps, err := solver.Dependencies(goPkg, gopath.GoPath())
 	if err != nil {
 		log.Fatalf("Couldn't solve package dependencies: %v", err)
+	}
+
+	for i := range deps {
+		for _, solver := range sourceSolvers {
+			src, err := solver.Source(deps[i])
+			if err != nil {
+				log.Fatalf("Unknown package source '%s': %v", deps[i].Name, err)
+			}
+			deps[i].Source = src
+		}
+
 	}
 
 	if err = go2nix.WriteDepsNix(deps); err != nil {
