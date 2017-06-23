@@ -20,6 +20,7 @@ type Package struct {
 func (s *SourceSolver) Source(pkg go2nix.GoPackage) (*go2nix.PkgSource, error) {
 	cmd, args := prefetchCmd(pkg.Source.Type)
 	args = append(args, pkg.Source.Url)
+	args = append(args, pkg.Revision)
 
 	prefetchOut, err := exec.Command(cmd, args...).Output()
 	if err != nil {
