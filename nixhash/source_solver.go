@@ -55,17 +55,11 @@ func hashFromNixPrefetch(fetchType go2nix.FetchType, prefetchOut []byte) (string
 }
 
 func prefetchCmd(fetchType go2nix.FetchType) (string, []string) {
-	fetchCmds := map[go2nix.FetchType][]string{
-		go2nix.Mercurial:  {"nix-prefetch-hg"},
-		go2nix.Git:        {"nix-prefetch-git", "--fetch-submodules"},
-		go2nix.Subversion: {"nix-prefetch-svn"},
-		go2nix.Bazaar:     {"nix-prefetch-bzr"},
+	cmd := "nix-prefetch-" + fetchType.String()
+
+	if fetchType == go2nix.Git {
+		return cmd, []string{"--fetch-submodules"}
 	}
 
-	cmd := fetchCmds[fetchType]
-	args := []string{}
-	if len(cmd) > 1 {
-		args = cmd[1 : len(cmd)-1]
-	}
-	return cmd[0], args
+	return cmd, []string{}
 }

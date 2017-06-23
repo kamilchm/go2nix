@@ -1,12 +1,18 @@
 package go2nix
 
-import (
-	"fmt"
-)
-
 type ImportPath string
 
 type FetchType int
+
+func (f FetchType) String() string {
+	names := map[FetchType]string{
+		Mercurial:  "hg",
+		Git:        "git",
+		Subversion: "svn",
+		Bazaar:     "bzr",
+	}
+	return names[f]
+}
 
 const (
 	Git FetchType = iota
@@ -44,12 +50,4 @@ type PackageLoader interface {
 
 type SourceSolver interface {
 	Source(GoPackage) (*PkgSource, error)
-}
-
-func WriteDepsNix(packages []GoPackage) error {
-	return fmt.Errorf("Not implemented")
-}
-
-func WriteDefaultNix(NixPackage) error {
-	return fmt.Errorf("Not implemented")
 }
