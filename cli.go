@@ -54,16 +54,24 @@ func currentPackage(goPath string) (string, error) {
 		return "", err
 	}
 
-	for _, goPathDir := range strings.Split(goPath, ":") {
-		goPathSrc, err := filepath.Abs(filepath.Join(goPathDir, "/src"))
-		if err != nil {
-			continue
-		}
-		if strings.HasPrefix(currDir, goPathSrc) {
-			return strings.TrimPrefix(currDir, goPathSrc+"/"), nil
-		}
+	if packagePath, found := trimGopath(goPath, currDir); found {
+		return packagePath, nil
 	}
 
 	return "", fmt.Errorf("Current dir %v is outside of GOPATH(%v). "+
 		"Can't get current package name", currDir, goPath)
+}
+
+func trimGopath(goPath string, packagePath string) (trimmedPath string, trimmed bool) {
+	for _, goPathDir := range filepath.SplitList(goPath) {
+		goPathSrc, err := filepath.Abs(filepath.Join(goPathDir, "/src"))
+		if err != nil {
+			continue
+		}
+		if strings.HasPrefix(packagePath, goPathSrc) {
+			return strings.TrimPrefix(packagePath, goPathSrc+"/"), true
+		}
+	}
+
+	return packagePath, false
 }

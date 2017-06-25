@@ -104,7 +104,7 @@ func NewPackage(importPath string, goPath string) (*GoPackage, error) {
 			fullPath, err)
 	}
 
-	pkgRoot := strings.TrimPrefix(repoRoot, goPath+"/src/")
+	pkgRoot, _ := trimGopath(goPath, repoRoot)
 
 	if strings.Contains(pkgRoot, "/vendor/") {
 		return nil, nil
@@ -136,7 +136,7 @@ func NewPackage(importPath string, goPath string) (*GoPackage, error) {
 }
 
 func goPackageDir(importPath, goPath string) (string, error) {
-	for _, goPathDir := range strings.Split(goPath, ":") {
+	for _, goPathDir := range filepath.SplitList(goPath) {
 		expectedPath := filepath.Clean(goPathDir + "/src/" + importPath)
 		if _, err := os.Stat(expectedPath); err == nil {
 			return expectedPath, nil
