@@ -6,7 +6,7 @@
     fetch = {
       type = "[[ .Source.Type ]]";
       url = "[[ .Source.Url ]]";
-      rev = "[[ .Revision ]]";
+      rev = "[[ .Source.Revision ]]";
       sha256 = "[[ .Source.Sha256 ]]";
     };
   }

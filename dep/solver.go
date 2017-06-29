@@ -59,7 +59,7 @@ func convertDeps(lock *depLock) (deps []go2nix.GoPackage) {
 	for _, p := range lock.Projects {
 		pkg := go2nix.GoPackage{
 			Name:        go2nix.ImportPath(p.Name),
-			Revision:    p.Revision,
+			Source:      &go2nix.PkgSource{Revision: p.Revision},
 			SubPackages: p.Packages,
 		}
 

@@ -9,7 +9,7 @@ import (
 	"github.com/kamilchm/go2nix"
 )
 
-type SourceSolver struct{}
+type HashSolver struct{}
 
 type Package struct {
 	Url    string `json:"url"`
@@ -17,14 +17,14 @@ type Package struct {
 	Sha256 string `json:"sha256"`
 }
 
-func (s *SourceSolver) Source(pkg go2nix.GoPackage) (*go2nix.PkgSource, error) {
+func (s *HashSolver) Source(pkg go2nix.GoPackage) (*go2nix.PkgSource, error) {
 	cmd, args := prefetchCmd(pkg.Source.Type)
 	args = append(args, pkg.Source.Url)
-	args = append(args, pkg.Revision)
+	args = append(args, pkg.Source.Revision)
 
 	prefetchOut, err := exec.Command(cmd, args...).Output()
 	if err != nil {
-		return nil, fmt.Errorf("Command %v failed: %v", cmd, err)
+		return nil, fmt.Errorf("Command '%v %s' failed: %v", cmd, strings.Join(args, " "), err)
 	}
 
 	hash, err := hashFromNixPrefetch(pkg.Source.Type, prefetchOut)

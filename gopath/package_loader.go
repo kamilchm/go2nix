@@ -17,7 +17,7 @@ func (l *PackageLoader) Package(dir string) (go2nix.GoPackage, error) {
 		return go2nix.GoPackage{}, fmt.Errorf("No GOPATH set, couldn't discover Go package")
 	}
 
-	for _, goPathDir := range strings.Split(goPath, ":") {
+	for _, goPathDir := range filepath.SplitList(goPath) {
 		goPathSrc, err := filepath.Abs(filepath.Join(goPathDir, "/src"))
 		if err != nil {
 			continue

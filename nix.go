@@ -3,7 +3,6 @@ package go2nix
 //go:generate go-bindata -o assets.go -pkg go2nix templates/
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"text/template"
@@ -16,8 +15,12 @@ func WriteDepsNix(packages []GoPackage) error {
 	}{packages, version})
 }
 
-func WriteDefaultNix(NixPackage) error {
-	return fmt.Errorf("Not implemented")
+func WriteDefaultNix(pkg NixPackage) error {
+	return writeFromTemplate("default.nix", "default.nix", struct {
+		Pkg       NixPackage
+		Version   string
+		BuildTags string
+	}{pkg, version, ""})
 }
 
 func writeFromTemplate(filename, templFile string, data interface{}) error {

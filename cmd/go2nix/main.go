@@ -10,14 +10,16 @@ import (
 	"github.com/kamilchm/go2nix/gopath"
 	"github.com/kamilchm/go2nix/govcs"
 	"github.com/kamilchm/go2nix/nixhash"
+	"github.com/kamilchm/go2nix/vcs"
 )
 
 func main() {
 	loader := go2nix.PackageLoader(&gopath.PackageLoader{})
-	solver := go2nix.DepSolver(&dep.Solver{})
+	depSolver := go2nix.DepSolver(&dep.Solver{})
 	sourceSolvers := []go2nix.SourceSolver{
-		&govcs.SourceSolver{},
-		&nixhash.SourceSolver{},
+		&govcs.RemoteSourceSolver{},
+		&vcs.LocalSourceSolver{},
+		&nixhash.HashSolver{},
 	}
 
 	currDir, err := os.Getwd()
@@ -29,8 +31,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("Couldn't load Go package: %v", err)
 	}
+	for _, solver := range sourceSolvers {
+		src, err := solver.Source(goPkg)
+		if err != nil {
+			log.Fatalf("Unknown package source '%s': %v", goPkg.Name, err)
+		}
+		goPkg.Source = src
+	}
 
-	deps, err := solver.Dependencies(goPkg, gopath.GoPath())
+	deps, err := depSolver.Dependencies(goPkg, gopath.GoPath())
 	if err != nil {
 		log.Fatalf("Couldn't solve package dependencies: %v", err)
 	}
@@ -43,7 +52,6 @@ func main() {
 			}
 			deps[i].Source = src
 		}
-
 	}
 
 	if err = go2nix.WriteDepsNix(deps); err != nil {

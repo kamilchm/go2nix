@@ -8,9 +8,9 @@ import (
 	"github.com/kamilchm/go2nix"
 )
 
-type SourceSolver struct{}
+type RemoteSourceSolver struct{}
 
-func (s *SourceSolver) Source(pkg go2nix.GoPackage) (*go2nix.PkgSource, error) {
+func (s *RemoteSourceSolver) Source(pkg go2nix.GoPackage) (*go2nix.PkgSource, error) {
 	repoRoot, err := vcs.RepoRootForImportPath(string(pkg.Name), false)
 	if err != nil {
 		return nil, fmt.Errorf("Unknown repo root for '%s': %v", pkg.Name, err)
@@ -19,6 +19,9 @@ func (s *SourceSolver) Source(pkg go2nix.GoPackage) (*go2nix.PkgSource, error) {
 	src := go2nix.PkgSource{
 		Type: fetchType(repoRoot.VCS.Name),
 		Url:  repoRoot.Repo,
+	}
+	if pkg.Source != nil {
+		src.Revision = pkg.Source.Revision
 	}
 	return &src, nil
 }

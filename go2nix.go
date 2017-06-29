@@ -22,15 +22,15 @@ const (
 )
 
 type PkgSource struct {
-	Type   FetchType
-	Url    string
-	Sha256 string
+	Type     FetchType
+	Url      string
+	Revision string
+	Sha256   string
 }
 
 type GoPackage struct {
 	Name        ImportPath
 	Source      *PkgSource
-	Revision    string
 	Version     string
 	SubPackages []string
 }
