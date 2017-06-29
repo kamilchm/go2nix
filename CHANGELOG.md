@@ -1,3 +1,9 @@
+## [1.2.1] - 2017-06-29
+
+### Fixed
+
+- #35 Support list of paths in GOPATH when searching dependencies
+
 ## [1.2.0] - 2017-03-15
 
 ### Added
