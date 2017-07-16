@@ -1,4 +1,5 @@
 [![Circle CI](https://circleci.com/gh/kamilchm/go2nix.svg?style=shield)](https://circleci.com/gh/kamilchm/go2nix)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bhttps%3A%2F%2Fgithub.com%2Fkamilchm%2Fgo2nix.svg?type=shield)](https://app.fossa.io/projects/git%2Bhttps%3A%2F%2Fgithub.com%2Fkamilchm%2Fgo2nix?ref=badge_shield)
 
 # go2nix - because Go and Nix are both amazing
 
@@ -326,3 +327,7 @@ stay tuned
 The preferred way of installing `go2nix` is to use `nix` like `nix-env -iA go2nix` or using it declaratively.
 
 But you can also use `go get github.com/kamilchm/go2nix`.
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bhttps%3A%2F%2Fgithub.com%2Fkamilchm%2Fgo2nix.svg?type=large)](https://app.fossa.io/projects/git%2Bhttps%3A%2F%2Fgithub.com%2Fkamilchm%2Fgo2nix?ref=badge_large)
