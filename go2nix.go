@@ -48,6 +48,6 @@ type PackageLoader interface {
 	Package(dir string) (GoPackage, error)
 }
 
-type SourceSolver interface {
-	Source(GoPackage) (*PkgSource, error)
+type PackageInferrer interface {
+	Infer(GoPackage) (GoPackage, error)
 }

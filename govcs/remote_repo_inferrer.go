@@ -8,22 +8,26 @@ import (
 	"github.com/kamilchm/go2nix"
 )
 
-type RemoteSourceSolver struct{}
+// RemoteSourceInferrer tries to find remote repo location using Go Tools VCS package.
+type RemoteRepoInferrer struct{}
 
-func (s *RemoteSourceSolver) Source(pkg go2nix.GoPackage) (*go2nix.PkgSource, error) {
+func (s *RemoteRepoInferrer) Infer(pkg go2nix.GoPackage) (go2nix.GoPackage, error) {
 	repoRoot, err := vcs.RepoRootForImportPath(string(pkg.Name), false)
 	if err != nil {
-		return nil, fmt.Errorf("Unknown repo root for '%s': %v", pkg.Name, err)
+		return pkg, fmt.Errorf("Unknown repo root for '%s': %v", pkg.Name, err)
 	}
 
-	src := go2nix.PkgSource{
+	src := &go2nix.PkgSource{
 		Type: fetchType(repoRoot.VCS.Name),
 		Url:  repoRoot.Repo,
 	}
 	if pkg.Source != nil {
 		src.Revision = pkg.Source.Revision
 	}
-	return &src, nil
+
+	pkg.Source = src
+
+	return pkg, nil
 }
 
 // fetchType maps Go vcs name to go2nix FetchType.

@@ -16,10 +16,10 @@ import (
 func main() {
 	loader := go2nix.PackageLoader(&gopath.PackageLoader{})
 	depSolver := go2nix.DepSolver(&dep.Solver{})
-	sourceSolvers := []go2nix.SourceSolver{
-		&govcs.RemoteSourceSolver{},
-		&vcs.LocalSourceSolver{},
-		&nixhash.HashSolver{},
+	packageInferrers := []go2nix.PackageInferrer{
+		&govcs.RemoteRepoInferrer{},
+		&vcs.LocalSourceInferrer{},
+		&nixhash.HashInferrer{},
 	}
 
 	currDir, err := os.Getwd()
@@ -31,12 +31,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Couldn't load Go package: %v", err)
 	}
-	for _, solver := range sourceSolvers {
-		src, err := solver.Source(goPkg)
+	for _, inferrer := range packageInferrers {
+		goPkg, err = inferrer.Infer(goPkg)
 		if err != nil {
-			log.Fatalf("Unknown package source '%s': %v", goPkg.Name, err)
+			log.Fatalf("Error while trying to infer Go package '%s': %v", goPkg.Name, err)
 		}
-		goPkg.Source = src
 	}
 
 	deps, err := depSolver.Dependencies(goPkg, gopath.GoPath())
@@ -44,13 +43,19 @@ func main() {
 		log.Fatalf("Couldn't solve package dependencies: %v", err)
 	}
 
+	depsInferrers := []go2nix.PackageInferrer{
+		&govcs.RemoteRepoInferrer{},
+		&nixhash.HashInferrer{},
+	}
+
 	for i := range deps {
-		for _, solver := range sourceSolvers {
-			src, err := solver.Source(deps[i])
+		// TODO: infer packages concurrently
+		for _, inferrer := range depsInferrers {
+			pkg, err := inferrer.Infer(deps[i])
 			if err != nil {
-				log.Fatalf("Unknown package source '%s': %v", deps[i].Name, err)
+				log.Fatalf("Error while trying to infer Go package '%s': %v", deps[i].Name, err)
 			}
-			deps[i].Source = src
+			deps[i] = pkg
 		}
 	}
 

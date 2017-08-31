@@ -9,7 +9,7 @@ import (
 	"github.com/kamilchm/go2nix"
 )
 
-type HashSolver struct{}
+type HashInferrer struct{}
 
 type Package struct {
 	Url    string `json:"url"`
@@ -17,24 +17,23 @@ type Package struct {
 	Sha256 string `json:"sha256"`
 }
 
-func (s *HashSolver) Source(pkg go2nix.GoPackage) (*go2nix.PkgSource, error) {
+func (s *HashInferrer) Infer(pkg go2nix.GoPackage) (go2nix.GoPackage, error) {
 	cmd, args := prefetchCmd(pkg.Source.Type)
 	args = append(args, pkg.Source.Url)
 	args = append(args, pkg.Source.Revision)
 
 	prefetchOut, err := exec.Command(cmd, args...).Output()
 	if err != nil {
-		return nil, fmt.Errorf("Command '%v %s' failed: %v", cmd, strings.Join(args, " "), err)
+		return pkg, fmt.Errorf("Command '%v %s' failed: %v", cmd, strings.Join(args, " "), err)
 	}
 
 	hash, err := hashFromNixPrefetch(pkg.Source.Type, prefetchOut)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to extract hash from '%v' output: %v", cmd, err)
+		return pkg, fmt.Errorf("Unable to extract hash from '%v' output: %v", cmd, err)
 	}
 
-	src := pkg.Source
-	src.Sha256 = hash
-	return src, nil
+	pkg.Source.Sha256 = hash
+	return pkg, nil
 }
 
 func hashFromNixPrefetch(fetchType go2nix.FetchType, prefetchOut []byte) (string, error) {
