@@ -37,6 +37,7 @@ type GoPackage struct {
 
 type NixPackage struct {
 	GoPackage
+	NixName        string
 	Deps []GoPackage
 }
 
