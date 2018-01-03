@@ -63,7 +63,7 @@ func main() {
 		log.Fatalf("Error while trying to write deps.nix: %v", err)
 	}
 
-	nixPkg := go2nix.NixPackage{GoPackage: goPkg}
+	nixPkg := go2nix.NewNixPackage(goPkg)
 	// TODO: filename, err :=
 	if err = go2nix.WriteDefaultNix(nixPkg); err != nil {
 		log.Fatalf("Error while trying to write default.nix: %v", err)

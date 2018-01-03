@@ -15,6 +15,12 @@ func WriteDepsNix(packages []GoPackage) error {
 	}{packages, version})
 }
 
+func NewNixPackage(pkg GoPackage) (n NixPackage) {
+	n = NixPackage{GoPackage: pkg}
+	n.NixName = nixName(string(pkg.Name))
+	return
+}
+
 func WriteDefaultNix(pkg NixPackage) error {
 	return writeFromTemplate("default.nix", "default.nix", struct {
 		Pkg       NixPackage
