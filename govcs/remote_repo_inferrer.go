@@ -12,9 +12,16 @@ import (
 type RemoteRepoInferrer struct{}
 
 func (s *RemoteRepoInferrer) Infer(pkg go2nix.GoPackage) (go2nix.GoPackage, error) {
-	repoRoot, err := vcs.RepoRootForImportPath(string(pkg.Name), false)
+	repo := string(pkg.Name)
+	// The repository url can be different from the import
+	// path. See the source attribute in the Gopkg.toml constraint
+	// section.
+	if pkg.Source != nil && pkg.Source.Url != "" {
+		repo = pkg.Source.Url
+	}
+	repoRoot, err := vcs.RepoRootForImportPath(repo, false)
 	if err != nil {
-		return pkg, fmt.Errorf("Unknown repo root for '%s': %v", pkg.Name, err)
+		return pkg, fmt.Errorf("Unknown repo root for '%s': %v", repo, err)
 	}
 
 	src := &go2nix.PkgSource{

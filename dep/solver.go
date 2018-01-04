@@ -20,6 +20,7 @@ type depLock struct {
 
 type depProject struct {
 	Name     string   `toml:"name"`
+	Source   string   `toml:"source"`
 	Revision string   `toml:"revision"`
 	Packages []string `toml:"packages"`
 }
@@ -59,7 +60,7 @@ func convertDeps(lock *depLock) (deps []go2nix.GoPackage) {
 	for _, p := range lock.Projects {
 		pkg := go2nix.GoPackage{
 			Name:        go2nix.ImportPath(p.Name),
-			Source:      &go2nix.PkgSource{Revision: p.Revision},
+			Source:      &go2nix.PkgSource{Url: p.Source, Revision: p.Revision},
 			SubPackages: p.Packages,
 		}
 
