@@ -7,12 +7,9 @@ buildGoPackage rec {
   version = "0.2-dev";
 
   goPackagePath = "github.com/kamilchm/go2nix";
+  subPackages = [ "cmd/go2nix" ];
 
-  src = fetchgit {
-    rev = "7256b185c5e20659ea277bad42c188dbbba5a404";
-    url = "/home/kamil/src/github.com/kamilchm/go2nix";
-    sha256 = "00dliwsfzq8q7dnyk5sdz5xndxf76r5815g1w5987ls223ksgnf9";
-  };
+  src = ./.;
 
   goDeps = ./deps.nix;
 
