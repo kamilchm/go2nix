@@ -1,9 +1,11 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/kamilchm/go2nix"
 	"github.com/kamilchm/go2nix/dep"
@@ -14,6 +16,10 @@ import (
 )
 
 func main() {
+	var outputDir = flag.String("output", ".", "where to save the derivation")
+	var pkgPath = flag.String("pkgPath", "", "Go package path")
+	flag.Parse()
+
 	loader := go2nix.PackageLoader(&gopath.PackageLoader{})
 	depSolver := go2nix.DepSolver(&dep.Solver{})
 	packageInferrers := []go2nix.PackageInferrer{
@@ -27,10 +33,16 @@ func main() {
 		log.Fatalf("Couldn't get current dir: %v", err)
 	}
 
-	goPkg, err := loader.Package(currDir)
-	if err != nil {
-		log.Fatalf("Couldn't load Go package: %v", err)
+	var goPkg = go2nix.GoPackage{}
+	if pkgPath != nil && *pkgPath != "" {
+		goPkg.Name = go2nix.ImportPath(strings.Trim(*pkgPath, "\""))
+	} else {
+		goPkg, err = loader.Package(currDir)
+		if err != nil {
+			log.Fatalf("Couldn't load Go package: %v", err)
+		}
 	}
+
 	for _, inferrer := range packageInferrers {
 		goPkg, err = inferrer.Infer(goPkg)
 		if err != nil {
@@ -59,13 +71,13 @@ func main() {
 		}
 	}
 
-	if err = go2nix.WriteDepsNix(deps); err != nil {
+	if err = go2nix.WriteDepsNix(deps, *outputDir); err != nil {
 		log.Fatalf("Error while trying to write deps.nix: %v", err)
 	}
 
 	nixPkg := go2nix.NewNixPackage(goPkg)
 	// TODO: filename, err :=
-	if err = go2nix.WriteDefaultNix(nixPkg); err != nil {
+	if err = go2nix.WriteDefaultNix(nixPkg, *outputDir); err != nil {
 		log.Fatalf("Error while trying to write default.nix: %v", err)
 	}
 

@@ -2,19 +2,32 @@
 #! nix-shell -i bash -p ripgrep -I nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/nixos-unstable.tar.gz
 set -e
 
-export NIXPKGS=$(nix-instantiate --eval -E '<nixpkgs>')
+NIXPKGS=$(nix-instantiate --eval -E '<nixpkgs>')
 
-printPackage () {
+GO2NIX="$(nix-build)/bin/go2nix"
+
+processPackage () {
     #echo $1
-    #nix-instantiate --eval -E '((import <nixpkgs> {}).callPackage '"$1"' {}).goPackagePath'
+    PKG_PATH=$(nix-instantiate --eval -E '((import <nixpkgs> {}).callPackage '"$1"' {}).goPackagePath')
     NAME=$(nix-instantiate --eval -E '((import <nixpkgs> {}).callPackage '"$1"' {}).name')
     SRC=$(grep "name = \"" $1 | cut -d '"' -f2 | cut -d '-' -f1 | xargs -I {} nix-build -A "{}.src")
 
     if [ -f "$SRC/Gopkg.lock" ]; then
-        echo "$NAME: got Gopkg.lock >> ready to CONVERT"
+        echo "$NAME: got Gopkg.lock >> CONVERTING"
+        convert "$SRC" "$PKG_PATH" "$1"
     else
         echo "$NAME: NO Gopkg.lock!"
     fi
+}
+
+convert () {
+    SRC="$1"
+    PKG="$2"
+    DST=$(realpath -e $(dirname "$3"))
+    echo "Converting $SRC into $DST"
+    pushd "$SRC"
+    "$GO2NIX" -pkgPath "$PKG" -output "$DST"
+    popd
 }
 
 pushd $NIXPKGS
@@ -62,7 +75,7 @@ rg -t nix -l buildGoPackage | rg -vF "top-level" | rg -vF "nixos" | \
     -e "platinum-searcher" \
     | sort | uniq | \
     while read goPackage; do
-        printPackage "$goPackage"
+        processPackage "$goPackage"
     done
 popd
 

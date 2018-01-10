@@ -4,12 +4,14 @@ package go2nix
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 )
 
-func WriteDepsNix(packages []GoPackage) error {
-	return writeFromTemplate("deps.nix", "deps.nix", struct {
+func WriteDepsNix(packages []GoPackage, dir string) error {
+	filename := filepath.Join(dir, "deps.nix")
+	return writeFromTemplate(filename, "deps.nix", struct {
 		Deps    []GoPackage
 		Version string
 	}{packages, version})
@@ -21,8 +23,9 @@ func NewNixPackage(pkg GoPackage) (n NixPackage) {
 	return
 }
 
-func WriteDefaultNix(pkg NixPackage) error {
-	return writeFromTemplate("default.nix", "default.nix", struct {
+func WriteDefaultNix(pkg NixPackage, dir string) error {
+	filename := filepath.Join(dir, "default.nix")
+	return writeFromTemplate(filename, "default.nix", struct {
 		Pkg       NixPackage
 		Version   string
 		BuildTags string
