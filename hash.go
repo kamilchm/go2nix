@@ -25,6 +25,9 @@ func calculateHash(url, pathType string) (hash string) {
 	prefetchCmd := exec.Command("nix-prefetch-"+pathType, args...)
 	prefetchOut, err := prefetchCmd.Output()
 	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			log.Print(string(exitErr.Stderr))
+		}
 		log.Fatalf("Command %v %v failed: %v", prefetchCmd.Path, prefetchCmd.Args, err)
 	}
 	return hashFromNixPrefetch(pathType, prefetchOut)
