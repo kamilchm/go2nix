@@ -1,6 +1,10 @@
 [![Circle CI](https://circleci.com/gh/kamilchm/go2nix.svg?style=shield)](https://circleci.com/gh/kamilchm/go2nix)
 
-# go2nix - because Go and Nix are both amazing
+# go2nix - nix packages for Go applications
+
+go2nix is best suited for Go apps before [golang dep](https://github.com/golang/dep) was introduced.
+
+If you see `Gopkgs.lock` file in app source try [dep2nix](https://github.com/nixcloud/dep2nix) instead.
 
 ## For Nixers - packaging Go applications
 
