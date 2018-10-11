@@ -56,7 +56,7 @@ func save(pkgName, goPath, nixFile string, depsFile string, testImports bool, bu
 	for _, dep := range deps {
 		p, err := NewPackage(dep, goPath)
 		if err != nil {
-			return fmt.Errorf("Can't create package for: %v", dep)
+			return fmt.Errorf("Can't create package for: %v, %v", dep, err)
 		}
 		if p == nil || p.VcsRepo == pkg.VcsRepo {
 			continue
