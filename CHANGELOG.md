@@ -1,3 +1,10 @@
+## [1.3.0] - 2018-10-19
+
+### Added
+
+- #69 print stderr if prefetch-* command invocation fails
+- #75 Report error, if it can't create a package
+
 ## [1.2.1] - 2017-06-29
 
 ### Fixed
