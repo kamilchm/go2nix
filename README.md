@@ -2,9 +2,10 @@
 
 # go2nix - nix packages for Go applications
 
-go2nix is best suited for Go apps before [golang dep](https://github.com/golang/dep) was introduced.
+go2nix is best suited for Go apps written before [dep](https://github.com/golang/dep) or [modules](https://github.com/golang/go/wiki/Modules) were introduced.
 
-If you see `Gopkgs.lock` file in app source try [dep2nix](https://github.com/nixcloud/dep2nix) instead.
+- If you see a `Gopkgs.lock` file in the source try [dep2nix](https://github.com/nixcloud/dep2nix) instead.
+- If you see a `go.mod` file in the source try [vgo2nix](https://github.com/adisbladis/vgo2nix) instead.
 
 ## For Nixers - packaging Go applications
 
