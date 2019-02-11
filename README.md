@@ -35,7 +35,7 @@ Our project will be called `influxdb-demo` and this demo will be using the [infl
 
         nix-shell -p go git go2nix
 
-  **Note**: Make sure `go2nix` is at least version 1.1.1
+   **Note**: Make sure `go2nix` is at least version 1.1.1
 
 3. Then set the `GOPATH`:
 
@@ -100,7 +100,7 @@ Our project will be called `influxdb-demo` and this demo will be using the [infl
             c.Write(bp)
         }
 
-  **Note**: We use [go influxdb client](https://github.com/influxdata/influxdb/tree/master/client) as an external library example.
+   **Note**: We use [go influxdb client](https://github.com/influxdata/influxdb/tree/master/client) as an external library example.
 
 5. Create a `GIT` repository
 
@@ -114,14 +114,14 @@ Our project will be called `influxdb-demo` and this demo will be using the [infl
         git remote add origin git@github.com:qknight/influxdb-demo.git
         git push -u origin master
 
-  **Note:** `go2nix` requires a `GIT repository` to retrieve the `commit hash` and the `remote` so it can generate the values as `name`, `version`, `rev` and `goPackagePath` in the `default.nix` file.
+   **Note:** `go2nix` requires a `GIT repository` to retrieve the `commit hash` and the `remote` so it can generate the values as `name`, `version`, `rev` and `goPackagePath` in the `default.nix` file.
 
 
 6. Download the dependency the go-way
 
         go get
 
-  **Note:** `go get` will populate `src/github.com/influxdata/influxdb` for you.
+   **Note:** `go get` will populate `src/github.com/influxdata/influxdb` for you.
 
 7. Building the project
 
@@ -129,11 +129,11 @@ Our project will be called `influxdb-demo` and this demo will be using the [infl
 
 8. Generate `default.nix`/`deps.nix`
 
-  If `go` was able to build the binary, use `go2nix` to derive the `default.nix` and `deps.nix`:
+   If `go` was able to build the binary, use `go2nix` to derive the `default.nix` and `deps.nix`:
 
-      go2nix save
+       go2nix save
 
-  **Note:** This gives you a `default.nix` and a `deps.nix` which can be put into `nixpkgs` but, if you want to use it with `nix-shell`, you need some tiny adaptions.
+   **Note:** This gives you a `default.nix` and a `deps.nix` which can be put into `nixpkgs` but, if you want to use it with `nix-shell`, you need some tiny adaptions.
 
 9. The `default.nix` file we generated
 
@@ -160,9 +160,9 @@ Our project will be called `influxdb-demo` and this demo will be using the [infl
           };
         }
 
-  **Note:** Update the `fetchgit url` to use `https` instead of `ssh` or `nix-build` won't be able to fetch the software later.
+   **Note:** Update the `fetchgit url` to use `https` instead of `ssh` or `nix-build` won't be able to fetch the software later.
 
-  **Note:** If you want to use this `default.nix` in `nixpkgs` you should extend the [meta section](https://nixos.org/nixpkgs/manual/#chap-meta) and correct the `goPackagePath`.
+   **Note:** If you want to use this `default.nix` in `nixpkgs` you should extend the [meta section](https://nixos.org/nixpkgs/manual/#chap-meta) and correct the `goPackagePath`.
 
 10. The `deps.nix` we generated
 
@@ -184,7 +184,7 @@ Our project will be called `influxdb-demo` and this demo will be using the [infl
 
         nix-build -E 'with import <nixpkgs> { };  callPackage ./default.nix {}'
 
-  This will print something like this:
+    This will print something like this:
 
         these derivations will be built:
           /nix/store/8naxqswyhsmhqhjzskz5q0nf33nvyzsf-influxdb-demo-718c85c.drv
@@ -237,7 +237,7 @@ Our project will be called `influxdb-demo` and this demo will be using the [infl
         patching script interpreter paths in /nix/store/av17zlfgnppl704wwxnh5pjpkcxac9k3-go1.7-influxdb-demo-20161030-718c85c
         /nix/store/9k4v7rhs5606fyia8mb341k71m3yrcbq-go1.7-influxdb-demo-20161030-718c85c-bin
 
-  **Note**: The resulting binary will be in `/nix/store/9k4v7rhs5606fyia8mb341k71m3yrcbq-go1.7-influxdb-demo-20161030-718c85c-bin`.
+    **Note**: The resulting binary will be in `/nix/store/9k4v7rhs5606fyia8mb341k71m3yrcbq-go1.7-influxdb-demo-20161030-718c85c-bin`.
 
 
 12. Enabling `nix-shell`
