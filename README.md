@@ -323,10 +323,6 @@ Some projects are built using `go get github.com/jeffail/leaps/cmd/...` and for 
 
 **Note:** The resulting `default.nix` and `deps.nix` are created in the directory you are currently in.
 
-## For Gophers - reproducible development and build environments
-
-Stay tuned.
-
 # Installation
 
 The preferred way of installing `go2nix` is to use `nix` like `nix-env -iA go2nix` or using it declaratively.
