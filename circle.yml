@@ -5,7 +5,10 @@ dependencies:
   override:
     - sudo mkdir -p /nix
     - sudo chown ubuntu /nix
-    - curl https://nixos.org/nix/install | sudo sh
+    - mkdir -p /nix /etc/nix
+    - chmod a+rwx /nix \
+    - echo 'sandbox = false' > /etc/nix/nix.conf
+    - curl https://nixos.org/nix/install | sh
     - echo "source ~/.nix-profile/etc/profile.d/nix.sh" >> ~/.circlerc
     - nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs
     - nix-channel --update
