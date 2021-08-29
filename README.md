@@ -42,10 +42,11 @@ Our project will be called `influxdb-demo` and this demo will be using the [infl
 
    **Note**: Make sure `go2nix` is at least version 1.1.1
 
-3. Then set the `GOPATH`:
+3. Then set the `GOPATH` and disable go modules:
 
    ```sh
    export GOPATH=`pwd`
+   export GO111MODULE=off
    mkdir -p src/github.com/qknight/influxdb-demo
    ```
 
@@ -221,16 +222,16 @@ Our project will be called `influxdb-demo` and this demo will be using the [infl
     exporting https://github.com/qknight/influxdb-demo.git (rev 718c85cd733bca964abf03f5371c939d19845f72) into /nix/store/pqlqq2wjgixvf5j6qmrv5qyjh1bc6i8q-influxdb-demo-718c85c
     Initialized empty Git repository in /nix/store/45jjx5jakvlgwzq358pivr5x8xpgdsck-influxdb-bcb48a8/.git/
     Initialized empty Git repository in /nix/store/pqlqq2wjgixvf5j6qmrv5qyjh1bc6i8q-influxdb-demo-718c85c/.git/
-    remote: Counting objects: 3, done.        
-    remote: Compressing objects: 100% (2/2), done.        
-    remote: Total 3 (delta 0), reused 3 (delta 0), pack-reused 0        
+    remote: Counting objects: 3, done.
+    remote: Compressing objects: 100% (2/2), done.
+    remote: Total 3 (delta 0), reused 3 (delta 0), pack-reused 0
     From https://github.com/qknight/influxdb-demo
     * branch            HEAD       -> FETCH_HEAD
     Switched to a new branch 'fetchgit'
     removing `.git'...
-    remote: Counting objects: 540, done.        
-    remote: Compressing objects: 100% (506/506), done.        
-    remote: Total 540 (delta 34), reused 179 (delta 6), pack-reused 0        
+    remote: Counting objects: 540, done.
+    remote: Compressing objects: 100% (506/506), done.
+    remote: Total 540 (delta 34), reused 179 (delta 6), pack-reused 0
     Receiving objects: 100% (540/540), 1.44 MiB | 0 bytes/s, done.
     Resolving deltas: 100% (34/34), done.
     From https://github.com/influxdata/influxdb
@@ -256,7 +257,7 @@ Our project will be called `influxdb-demo` and this demo will be using the [infl
     post-installation fixup
     shrinking RPATHs of ELF executables and libraries in /nix/store/9k4v7rhs5606fyia8mb341k71m3yrcbq-go1.7-influxdb-demo-20161030-718c85c-bin
     shrinking /nix/store/9k4v7rhs5606fyia8mb341k71m3yrcbq-go1.7-influxdb-demo-20161030-718c85c-bin/bin/influxdb-demo
-    stripping (with flags -S) in /nix/store/9k4v7rhs5606fyia8mb341k71m3yrcbq-go1.7-influxdb-demo-20161030-718c85c-bin/bin 
+    stripping (with flags -S) in /nix/store/9k4v7rhs5606fyia8mb341k71m3yrcbq-go1.7-influxdb-demo-20161030-718c85c-bin/bin
     patching script interpreter paths in /nix/store/9k4v7rhs5606fyia8mb341k71m3yrcbq-go1.7-influxdb-demo-20161030-718c85c-bin
     shrinking RPATHs of ELF executables and libraries in /nix/store/av17zlfgnppl704wwxnh5pjpkcxac9k3-go1.7-influxdb-demo-20161030-718c85c
     patching script interpreter paths in /nix/store/av17zlfgnppl704wwxnh5pjpkcxac9k3-go1.7-influxdb-demo-20161030-718c85c
@@ -269,13 +270,13 @@ Our project will be called `influxdb-demo` and this demo will be using the [infl
 12. Enabling `nix-shell`
 
     In order to use `nix-shell` you need to create a `shell.nix` file:
-         
+
     ```nix
     let
       pkgs = import <nixpkgs> {};
     in pkgs.callPackage ./default.nix {}
     ```
-    
+
     That will pass the derivations for `stdenv, buildGoPackage, fetchgit, fetchhg, fetchbzr, fetchsvn` into your package derivation. It will use `nixpkgs` (your current channel).
 
 
