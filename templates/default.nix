@@ -2,7 +2,7 @@
 { stdenv, buildGoPackage, fetchgit, fetchhg, fetchbzr, fetchsvn }:
 
 buildGoPackage rec {
-  name = "[[ .Pkg.Name ]]-unstable-${version}";
+  pname = "[[ .Pkg.Name ]]-unstable";
   version = "[[ .Pkg.UpdateDate.Format "2006-01-02" ]]";
   rev = "[[ .Pkg.Revision ]]";
 
